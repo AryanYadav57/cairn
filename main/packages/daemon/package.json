@@ -1,0 +1,15 @@
+{
+  "name": "@cairn/daemon",
+  "version": "0.2.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "cairn": "./src/cli.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@cairn/core": "*"
+  }
+}

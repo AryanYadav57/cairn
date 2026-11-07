@@ -1,0 +1,41 @@
+{
+  "name": "cairn-vscode",
+  "displayName": "Cairn: Agent Cost Estimator, Safe Undo & Mobile IDE Remote",
+  "description": "Know the cost before you build. Enforce agent budgets, undo risky actions with Git shadow snapshots, and control Antigravity IDE / VS Code from your phone.",
+  "version": "0.2.0",
+  "publisher": "cairn-studios",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cairn.openDashboard",
+        "title": "Cairn: Open Control Plane & Mobile Pairing Dashboard"
+      },
+      {
+        "command": "cairn.estimateWorkspacePrd",
+        "title": "Cairn: Estimate PRD Cost & Token Forecast"
+      },
+      {
+        "command": "cairn.undoLastStep",
+        "title": "Cairn: Undo Last Agent Action (Git Shadow Snapshot)"
+      },
+      {
+        "command": "cairn.configureAgentGateway",
+        "title": "Cairn: Point Coding Agents at Local Cairn Gateway"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

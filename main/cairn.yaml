@@ -1,0 +1,37 @@
+project: cairn-workspace
+budgets:
+  project:
+    usd: 40
+  daily:
+    usd: 10
+  task:
+    usd: 3
+    exhaustion_mode: wind_down
+routing:
+  default: smart
+  on_budget_80: fast_at_task_boundary
+  on_budget_100: wind_down_then_block
+aliases:
+  smart: google/gemini-4-argon
+  fast: google/gemini-3.8-flash
+  local: ollama/qwen2.5-coder:14b
+actions:
+  allow:
+    - read_file
+    - list_dir
+    - grep_search
+    - run_tests
+  ask:
+    - write_file
+    - edit_file
+    - git_push
+    - install_package
+    - bash
+  deny:
+    - rm_rf_root
+    - drop_database
+    - git_push_force_main
+remote:
+  enabled: true
+  require_biometric_for_high_risk: true
+  session_timeout_minutes: 120

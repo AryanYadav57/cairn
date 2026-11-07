@@ -1,0 +1,47 @@
+{
+  "name": "cairn-monorepo",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Cairn: Open-source control plane, PRD estimator, safe-action undo engine, and mobile IDE remote for coding agents",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "video:preview": "node node_modules/@remotion/cli/remotion-cli.js studio video/src/index.tsx --public-dir video/public",
+    "video:render": "node node_modules/@remotion/cli/remotion-cli.js render video/src/index.tsx CairnLaunch video/out/cairn-launch.mp4 --public-dir video/public --overwrite --codec=h264 --crf=16",
+    "build": "npm run build --workspaces --if-present",
+    "test": "node --no-warnings --import tsx --test packages/core/src/**/*.test.ts packages/daemon/src/**/*.test.ts",
+    "start": "node --no-warnings --import tsx packages/daemon/src/cli.ts start",
+    "estimate": "node --no-warnings --import tsx packages/daemon/src/cli.ts estimate",
+    "cairn": "node --no-warnings --import tsx packages/daemon/src/cli.ts",
+    "export": "node ad/scripts/export.js",
+    "export:30": "node ad/scripts/export.js --fps 30",
+    "preview": "node ad/scripts/preview_server.js",
+    "capture:verify": "node ad/scripts/capture_verification.js"
+  },
+  "devDependencies": {
+    "@remotion/cli": "^4.0.541",
+    "@remotion/google-fonts": "^4.0.541",
+    "@remotion/media-utils": "^4.0.541",
+    "@remotion/motion-blur": "^4.0.541",
+    "@remotion/noise": "^4.0.541",
+    "@remotion/paths": "^4.0.541",
+    "@remotion/shapes": "^4.0.541",
+    "@remotion/transitions": "^4.0.541",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.5.14",
+    "puppeteer-core": "^25.16.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.541",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.2"
+  }
+}

@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cairn — Technical Whitepaper & System Architecture Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #090A0C;
+      color: #E4E4E7;
+      font-size: 10.5px;
+      line-height: 1.5;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      background: #090A0C;
+      padding: 15mm 18mm 16mm 18mm;
+      page-break-after: always;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .page-content {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+    }
+
+    /* Page Header */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #22262C;
+      padding-bottom: 7px;
+      margin-bottom: 12px;
+      font-size: 8.5px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #71717A;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-logo {
+      height: 14px;
+      width: auto;
+      filter: grayscale(100%) brightness(2.0) contrast(1.2);
+    }
+
+    .header-tag {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+
+    /* Page Footer */
+    .page-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #22262C;
+      padding-top: 7px;
+      margin-top: 10px;
+      font-size: 8px;
+      color: #71717A;
+    }
+
+    .page-num {
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+    }
+
+    h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 13px;
+      background: #FFFFFF;
+      border-radius: 2px;
+    }
+
+    h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #FFFFFF;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+
+    p {
+      color: #A1A1AA;
+      margin-bottom: 6px;
+    }
+
+    strong {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+
+    code, pre {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Solid Minimalist Cards - No Glassmorphism */
+    .card {
+      background: #111418;
+      border: 1px solid #22262C;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 9px;
+    }
+
+    .card-highlight {
+      border-left: 3px solid #FFFFFF;
+      background: #14181E;
+      border-top: 1px solid #2A2F37;
+      border-right: 1px solid #2A2F37;
+      border-bottom: 1px solid #2A2F37;
+    }
+
+    .card-danger {
+      border-left: 3px solid #EF4444;
+      background: #161214;
+      border-top: 1px solid #332024;
+      border-right: 1px solid #332024;
+      border-bottom: 1px solid #332024;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Badges - Monochrome Solid */
+    .badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 8px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-white {
+      background: #FFFFFF;
+      color: #090A0C;
+      border: 1px solid #FFFFFF;
+    }
+
+    .badge-outline {
+      background: #181B20;
+      color: #FFFFFF;
+      border: 1px solid #383E48;
+    }
+
+    .badge-zinc {
+      background: #1F242C;
+      color: #D4D4D8;
+      border: 1px solid #2F3642;
+    }
+
+    .badge-danger {
+      background: #2A1719;
+      color: #F87171;
+      border: 1px solid #5C272C;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.8px;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      background: #111418;
+      border: 1px solid #22262C;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th {
+      background: #171B21;
+      color: #FFFFFF;
+      font-weight: 600;
+      text-align: left;
+      padding: 6px 9px;
+      border-bottom: 1px solid #2A303A;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 6px 9px;
+      border-bottom: 1px solid #1C2128;
+      color: #A1A1AA;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Code blocks - Solid Crisp Dark */
+    .code-block {
+      background: #0E1013;
+      border: 1px solid #242930;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 8.5px;
+      color: #E4E4E7;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.4;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .token-kw { color: #FFFFFF; font-weight: 600; }
+    .token-fn { color: #D4D4D8; }
+    .token-str { color: #A1A1AA; }
+    .token-num { color: #E4E4E7; font-weight: 600; }
+    .token-cmt { color: #52525B; font-style: italic; }
+
+    /* Screenshot container */
+    .screenshot-frame {
+      border: 1px solid #262B33;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+      background: #000;
+      margin: 6px 0;
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .screenshot-caption {
+      font-size: 8px;
+      color: #71717A;
+      text-align: center;
+      margin-top: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* COVER PAGE SPECIAL MONOCHROME STYLING */
+    .cover-page {
+      justify-content: space-between;
+      padding: 24mm 22mm 20mm 22mm;
+      background: radial-gradient(circle at 50% 0%, #15181E 0%, #090A0C 75%);
+    }
+
+    .cover-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .cover-logo {
+      height: 48px;
+      width: auto;
+      filter: grayscale(100%) brightness(2.0) contrast(1.2);
+    }
+
+    .cover-icon {
+      width: 56px;
+      height: 56px;
+      filter: grayscale(100%) brightness(2.2) drop-shadow(0 0 15px rgba(255, 255, 255, 0.25));
+    }
+
+    .cover-center {
+      margin: auto 0;
+    }
+
+    .cover-badge-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .cover-title {
+      font-size: 38px;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -1.2px;
+      line-height: 1.05;
+      margin-bottom: 14px;
+    }
+
+    .cover-title span {
+      background: linear-gradient(180deg, #FFFFFF 0%, #828A97 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .cover-tagline {
+      font-size: 15px;
+      font-weight: 400;
+      color: #A1A1AA;
+      line-height: 1.45;
+      max-width: 540px;
+      margin-bottom: 24px;
+    }
+
+    .cover-tagline strong {
+      color: #FFFFFF;
+    }
+
+    .cover-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 14px 16px;
+      background: #111418;
+      border: 1px solid #282D36;
+      border-radius: 8px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    .stat-item {
+      text-align: left;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 8px;
+      color: #71717A;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .cover-footer {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #22262C;
+      padding-top: 12px;
+      font-size: 9px;
+      color: #71717A;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 1: COVER PAGE (MONOCHROME REFINED)                                    -->
+  <!-- ========================================================================= -->
+  <div class="page cover-page">
+    <div class="cover-top">
+      <img src="{{LOGO_IMG}}" class="cover-logo" alt="Cairn Logo">
+      <img src="{{ICON_IMG}}" class="cover-icon" alt="Monochrome Cairn Mark">
+    </div>
+
+    <div class="cover-center">
+      <div class="cover-badge-row">
+        <span class="badge badge-white">Local-First Architecture</span>
+        <span class="badge badge-outline">Zero External Cloud DB</span>
+        <span class="badge badge-zinc">v0.2 Enterprise Specification</span>
+      </div>
+
+      <div class="cover-title">
+        The Control Plane &amp;<br>
+        <span>Forecasting Gateway</span><br>
+        for Coding Agents
+      </div>
+
+      <p class="cover-tagline">
+        <strong>Know the cost before you build.</strong> Stay in control while autonomous coding agents work — from your desk or your phone.
+      </p>
+
+      <div class="cover-stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">&lt; 15ms</div>
+          <div class="stat-label">Gateway Proxy Latency</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">&lt; 20ms</div>
+          <div class="stat-label">Git Shadow Rollback</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">Local &amp; E2E Private</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">3-Tier</div>
+          <div class="stat-label">Budget Governance</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cover-footer">
+      <div>
+        <strong style="color: #FFFFFF;">Cairn Studios Inc.</strong> · Systems Engineering Whitepaper
+      </div>
+      <div>
+        Monorepo Release v0.2.0 · MIT Licensed · Nov 2026
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 2: PROBLEM STATEMENT & EXECUTIVE SUMMARY                              -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Executive Overview &amp; Industry Analysis</span>
+      </div>
+      <div class="header-tag">The 4 Agent Barriers</div>
+    </div>
+
+    <div class="page-content">
+      <h2>1. The Autonomous Agent Crisis</h2>
+      <p>
+        AI coding agents (Antigravity IDE, Claude Code, Cursor, Aider, and custom harnesses) have transformed software engineering from manual syntax writing to high-velocity autonomous orchestration. However, in production teams and mission-critical repositories, four structural barriers prevent enterprise confidence:
+      </p>
+
+      <div class="grid-2" style="margin-top: 10px; margin-bottom: 12px;">
+        <div class="card card-danger">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: #F87171; font-size: 10.5px;">1. Unpredictable Quadratic Cost</strong>
+            <span class="badge badge-danger">Cost Shock</span>
+          </div>
+          <p style="font-size: 9px; margin: 0; color: #D4D4D8;">
+            Nobody knows if an agent prompt will cost <strong>$3 or $300</strong>. As trajectories expand across 30+ turns, repeated full-context inputs cause prompt tokens to accumulate quadratically. Unchecked error-retry loops burn API limits in minutes.
+          </p>
+        </div>
+
+        <div class="card card-danger">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: #F87171; font-size: 10.5px;">2. Fragmented Provider Governance</strong>
+            <span class="badge badge-danger">Siloed Limits</span>
+          </div>
+          <p style="font-size: 9px; margin: 0; color: #D4D4D8;">
+            Usage caps live in separate web consoles across OpenAI, Anthropic, OpenRouter, and Ollama. Developers have no unified switchboard to enforce project-level spending caps, daily allowances, or graceful model downgrades.
+          </p>
+        </div>
+
+        <div class="card card-danger">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: #F87171; font-size: 10.5px;">3. Binary Trust &amp; Repository Regressions</strong>
+            <span class="badge badge-danger">No Middle Ground</span>
+          </div>
+          <p style="font-size: 9px; margin: 0; color: #D4D4D8;">
+            Engineers are forced into extreme choices: either micromanage and approve every single read-only command, or grant blind autonomous access where a misaligned tool call deletes migrations, wipes configuration, or damages working trees.
+          </p>
+        </div>
+
+        <div class="card card-danger">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <strong style="color: #F87171; font-size: 10.5px;">4. Desk-Bound Supervision Paralysis</strong>
+            <span class="badge badge-danger">Tethered Devs</span>
+          </div>
+          <p style="font-size: 9px; margin: 0; color: #D4D4D8;">
+            Agent workflows take 15–45 minutes to implement multi-file tasks. The moment an agent requests confirmation, triggers an IDE dialog, or exhausts an uncalibrated budget, the run stalls completely unless the developer is glued to their monitor.
+          </p>
+        </div>
+      </div>
+
+      <h2>2. Cairn: The Local Control Plane Solution</h2>
+      <p>
+        Cairn solves all four crises in a singular, zero-dependency local control plane that sits directly between coding agents and foundation model providers:
+      </p>
+
+      <div class="card card-highlight">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <strong style="color: #FFFFFF;">Core Innovation: The Closed-Loop Control Architecture</strong>
+          <span class="badge badge-white">Closed-Loop Moat</span>
+        </div>
+        <p style="font-size: 9.5px; margin-bottom: 6px; color: #D4D4D8;">
+          Cairn couples <strong>cache-aware token forecasting</strong> with <strong>real-time HTTP stream interception</strong>, <strong>off-branch Git shadow tree snapshots</strong>, and an <strong>encrypted 3-layer mobile remote</strong>. Every task execution feeds an empirical Bayesian calibration loop that gets more accurate for your specific codebase over time.
+        </p>
+        <div class="grid-3" style="margin-top: 6px;">
+          <div style="background: #191D24; border: 1px solid #2B313D; padding: 7px; border-radius: 5px;">
+            <div style="color: #FFFFFF; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 8.5px;">FORECAST</div>
+            <div style="font-size: 8px; color: #A1A1AA;">Sizes PRD tasks, computes cache read/write splits &amp; outputs Low-Exp-High ranges.</div>
+          </div>
+          <div style="background: #191D24; border: 1px solid #2B313D; padding: 7px; border-radius: 5px;">
+            <div style="color: #FFFFFF; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 8.5px;">GOVERN &amp; UNDO</div>
+            <div style="font-size: 8px; color: #A1A1AA;">Enforces hard budget caps, injects wind-downs, and takes sub-20ms git tree snapshots.</div>
+          </div>
+          <div style="background: #191D24; border: 1px solid #2B313D; padding: 7px; border-radius: 5px;">
+            <div style="color: #FFFFFF; font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 8.5px;">SUPERVISE</div>
+            <div style="font-size: 8px; color: #A1A1AA;">Review diffs, steer prompts &amp; stream Antigravity / VS Code windows to your phone.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screenshot-frame" style="max-height: 110px;">
+        <img src="{{HOME_IMG}}" alt="Cairn Dashboard Cockpit">
+      </div>
+      <div class="screenshot-caption">Figure 1.1: Cairn Unified Control Plane — Real-time telemetry, model attribution, and status bar.</div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 1 &amp; 2</div>
+      <div class="page-num">PAGE 02</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 3: THE CAIRN CLOSED LOOP & TOKEN ECONOMICS                            -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>The Closed-Loop Methodology &amp; Mathematical Model</span>
+      </div>
+      <div class="header-tag">Token Economics</div>
+    </div>
+
+    <div class="page-content">
+      <h2>3. The Closed-Loop Lifecycle</h2>
+      <p>
+        Cairn replaces blind trial-and-error with a rigorous engineering lifecycle that models context growth before writing a single line of code:
+      </p>
+
+      <!-- SVG MONOCHROME LIFECYCLE FLOWCHART -->
+      <div style="text-align: center; margin: 6px 0 10px 0;">
+        <svg viewBox="0 0 680 100" style="width: 100%; height: auto; max-height: 95px;">
+          <!-- Steps -->
+          <rect x="5" y="15" width="95" height="55" rx="5" fill="#12151A" stroke="#FFFFFF" stroke-width="1.2"/>
+          <text x="52" y="38" fill="#FFFFFF" font-size="8.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">1. INGEST</text>
+          <text x="52" y="52" fill="#A1A1AA" font-size="7" text-anchor="middle">PRD &amp; Repo Scan</text>
+
+          <line x1="105" y1="42" x2="120" y2="42" stroke="#FFFFFF" stroke-width="1.5"/>
+          <polygon points="124,42 118,39 118,45" fill="#FFFFFF"/>
+
+          <rect x="125" y="15" width="105" height="55" rx="5" fill="#12151A" stroke="#FFFFFF" stroke-width="1.2"/>
+          <text x="177" y="38" fill="#FFFFFF" font-size="8.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">2. DECOMPOSE</text>
+          <text x="177" y="52" fill="#A1A1AA" font-size="7" text-anchor="middle">Atomic Task Graph</text>
+
+          <line x1="235" y1="42" x2="250" y2="42" stroke="#FFFFFF" stroke-width="1.5"/>
+          <polygon points="254,42 248,39 248,45" fill="#FFFFFF"/>
+
+          <rect x="255" y="15" width="105" height="55" rx="5" fill="#12151A" stroke="#FFFFFF" stroke-width="1.2"/>
+          <text x="307" y="38" fill="#FFFFFF" font-size="8.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">3. FORECAST</text>
+          <text x="307" y="52" fill="#A1A1AA" font-size="7" text-anchor="middle">Cache-Aware Math</text>
+
+          <line x1="365" y1="42" x2="380" y2="42" stroke="#FFFFFF" stroke-width="1.5"/>
+          <polygon points="384,42 378,39 378,45" fill="#FFFFFF"/>
+
+          <rect x="385" y="15" width="115" height="55" rx="5" fill="#12151A" stroke="#FFFFFF" stroke-width="1.2"/>
+          <text x="442" y="38" fill="#FFFFFF" font-size="8.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">4. SUPERVISE</text>
+          <text x="442" y="52" fill="#A1A1AA" font-size="7" text-anchor="middle">Gateway &amp; Mobile</text>
+
+          <line x1="505" y1="42" x2="520" y2="42" stroke="#FFFFFF" stroke-width="1.5"/>
+          <polygon points="524,42 518,39 518,45" fill="#FFFFFF"/>
+
+          <rect x="525" y="15" width="145" height="55" rx="5" fill="#12151A" stroke="#FFFFFF" stroke-width="1.2"/>
+          <text x="597" y="38" fill="#FFFFFF" font-size="8.5" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">5. CALIBRATE (MOAT)</text>
+          <text x="597" y="52" fill="#A1A1AA" font-size="7" text-anchor="middle">Bayesian Prior Tuning</text>
+
+          <!-- Feedback line -->
+          <path d="M 597 70 L 597 88 L 52 88 L 52 72" fill="none" stroke="#71717A" stroke-dasharray="3,3" stroke-width="1.2"/>
+          <text x="325" y="85" fill="#D4D4D8" font-size="7" text-anchor="middle" font-family="'JetBrains Mono', monospace">Actual vs Estimated Multipliers Refined After Every Task</text>
+        </svg>
+      </div>
+
+      <h2>4. Mathematical Formulation of Agent Trajectories</h2>
+      <p>
+        Coding agents do not issue isolated API queries. They accumulate history across successive turns while benefiting from modern prompt caching (Anthropic, Gemini, OpenAI). Cairn models this behavior explicitly:
+      </p>
+
+      <div class="code-block">
+<span class="token-cmt">// 1. Context Input Sizing per Turn (t)</span>
+<span class="token-kw">turn_t_new_input</span>    = (t === 1) ? base_context : avg_tool_output_and_diff;
+<span class="token-kw">turn_t_cached_input</span> = <span class="token-fn">Σ</span>_{k=1..t-1} turn_k_new_input × cache_hit_ratio;
+
+<span class="token-cmt">// 2. Cache-Split Dollar Expenditure per Task</span>
+<span class="token-kw">input_cost</span>  = <span class="token-fn">Σ</span>_{t=1..turns} [ (turn_t_new_input × P_write) + (turn_t_cached_input × P_read) ];
+<span class="token-kw">output_cost</span> = [ (code_generated + reasoning_tokens + tool_calls) × turns ] × P_out;
+<span class="token-kw">task_cost</span>   = (input_cost + output_cost) × retry_factor;
+
+<span class="token-cmt">// 3. Project Aggregation with Brownfield Multiplier</span>
+<span class="token-kw">project_total</span> = <span class="token-fn">Σ</span> task_cost × repo_complexity_factor × integration_overhead;
+      </div>
+
+      <div class="grid-2" style="margin-top: 6px;">
+        <div class="card">
+          <h3 style="color: #FFFFFF;">Naive Agent Trajectory</h3>
+          <p style="font-size: 8.5px; margin-bottom: 4px;">
+            Without caching and task attribution, each turn re-sends the entire conversation, leading to <strong>quadratic O(n²) token explosion</strong> and runaway budgets when test-fix oscillations occur.
+          </p>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #F87171;">
+            Typical 30-Turn Trajectory: ~48,000,000 uncached tokens → $144.00
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="color: #FFFFFF;">Cairn Governed Trajectory</h3>
+          <p style="font-size: 8.5px; margin-bottom: 4px;">
+            Leverages <strong>85%+ warm prompt cache hit rates</strong>, soft 80% task-boundary model downgrades, and automated wind-down limits to compress total spend by up to <strong>78%</strong>.
+          </p>
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 8px; color: #FFFFFF;">
+            Cairn Optimized Trajectory: ~35,000,000 tokens (70% cached) → $31.50
+          </div>
+        </div>
+      </div>
+
+      <!-- Token Burn Chart Illustration -->
+      <div style="background: #111418; border: 1px solid #22262C; border-radius: 6px; padding: 8px 12px; margin-top: 6px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <span style="font-size: 8.5px; font-weight: 600; color: #FFFFFF;">Cumulative Cost Curve (USD vs Agent Turns)</span>
+          <span style="font-size: 8px; color: #71717A;">Based on Claude 3.7 Sonnet Priors</span>
+        </div>
+        <svg viewBox="0 0 640 90" style="width: 100%; height: 68px;">
+          <!-- Axes -->
+          <line x1="40" y1="75" x2="620" y2="75" stroke="#333A44" stroke-width="1"/>
+          <line x1="40" y1="10" x2="40" y2="75" stroke="#333A44" stroke-width="1"/>
+          <!-- Grid lines -->
+          <line x1="40" y1="52" x2="620" y2="52" stroke="#1D222A" stroke-dasharray="2,2"/>
+          <line x1="40" y1="30" x2="620" y2="30" stroke="#1D222A" stroke-dasharray="2,2"/>
+          <!-- Labels -->
+          <text x="32" y="78" fill="#71717A" font-size="7" text-anchor="end">$0</text>
+          <text x="32" y="55" fill="#71717A" font-size="7" text-anchor="end">$50</text>
+          <text x="32" y="33" fill="#71717A" font-size="7" text-anchor="end">$100</text>
+          <text x="32" y="12" fill="#71717A" font-size="7" text-anchor="end">$150</text>
+          
+          <text x="140" y="85" fill="#71717A" font-size="6.5" text-anchor="middle">Turn 5</text>
+          <text x="260" y="85" fill="#71717A" font-size="6.5" text-anchor="middle">Turn 15</text>
+          <text x="400" y="85" fill="#71717A" font-size="6.5" text-anchor="middle">Turn 25</text>
+          <text x="560" y="85" fill="#71717A" font-size="6.5" text-anchor="middle">Turn 35 (Completion)</text>
+
+          <!-- Naive Uncached Curve (Quadratic) -->
+          <path d="M 40 75 Q 320 62 600 12" fill="none" stroke="#EF4444" stroke-width="2"/>
+          <circle cx="600" cy="12" r="2.5" fill="#EF4444"/>
+          <text x="530" y="14" fill="#EF4444" font-size="7" font-weight="700">Naive ($144+)</text>
+
+          <!-- Cairn Managed Curve (Pure White Bounded Linear with Cache Capping) -->
+          <path d="M 40 75 Q 260 68 450 55 T 600 52" fill="none" stroke="#FFFFFF" stroke-width="2.2"/>
+          <circle cx="600" cy="52" r="3" fill="#FFFFFF"/>
+          <text x="520" y="60" fill="#FFFFFF" font-size="7" font-weight="700">Cairn ($31.50)</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 3 &amp; 4</div>
+      <div class="page-num">PAGE 03</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 4: DETAILED SYSTEM ARCHITECTURE                                       -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Engineering Blueprint &amp; System Anatomy</span>
+      </div>
+      <div class="header-tag">Architecture</div>
+    </div>
+
+    <div class="page-content">
+      <h2>5. Deep System Architecture</h2>
+      <p>
+        Cairn executes as a self-contained local daemon with zero external telemetry requirements. It communicates with host editors and devices over strict localhost or end-to-end encrypted tunnels:
+      </p>
+
+      <!-- SVG MONOCHROME ARCHITECTURE BLUEPRINT -->
+      <div style="text-align: center; margin: 6px 0 8px 0;">
+        <svg viewBox="0 0 680 215" style="width: 100%; height: auto; max-height: 205px;">
+          <!-- Agents container -->
+          <rect x="15" y="8" width="650" height="30" rx="5" fill="#12151A" stroke="#2B313D" stroke-width="1"/>
+          <text x="340" y="27" fill="#FFFFFF" font-size="9" font-weight="700" text-anchor="middle" font-family="'JetBrains Mono', monospace">
+            CODING AGENTS: Antigravity IDE · Claude Code · Cursor · Windsurf · Aider · Hermes CLI
+          </text>
+
+          <!-- Arrow to Gateway -->
+          <line x1="340" y1="38" x2="340" y2="56" stroke="#FFFFFF" stroke-width="1.8"/>
+          <polygon points="340,60 336,52 344,52" fill="#FFFFFF"/>
+
+          <!-- Cairn Daemon Outer Box -->
+          <rect x="15" y="60" width="650" height="108" rx="6" fill="#0D0F12" stroke="#FFFFFF" stroke-width="1.4"/>
+          <text x="32" y="75" fill="#FFFFFF" font-size="8.5" font-weight="700" font-family="'JetBrains Mono', monospace">
+            CAIRN LOCAL DAEMON ENGINE (Node / Bun Single Binary)
+          </text>
+
+          <!-- Module 1: Frontdoors -->
+          <rect x="25" y="82" width="135" height="74" rx="4" fill="#15181E" stroke="#2B313D"/>
+          <text x="92" y="97" fill="#FFFFFF" font-size="7.5" font-weight="700" text-anchor="middle">API FRONT DOORS</text>
+          <text x="92" y="111" fill="#D4D4D8" font-size="6.8" text-anchor="middle">OpenAI /v1/chat</text>
+          <text x="92" y="123" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Anthropic /v1/messages</text>
+          <text x="92" y="135" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Task Scoped /t/:id/v1</text>
+          <text x="92" y="147" fill="#FFFFFF" font-size="6.8" text-anchor="middle">&lt; 15ms Overhead</text>
+
+          <!-- Module 2: Stream Interceptor & Policy -->
+          <rect x="170" y="82" width="150" height="74" rx="4" fill="#15181E" stroke="#2B313D"/>
+          <text x="245" y="97" fill="#FFFFFF" font-size="7.5" font-weight="700" text-anchor="middle">POLICY &amp; INTERCEPTOR</text>
+          <text x="245" y="111" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Streaming SSE Chunk Parser</text>
+          <text x="245" y="123" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Tool-Use Risk Classifier</text>
+          <text x="245" y="135" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Deny &gt; Ask &gt; Allow Logic</text>
+          <text x="245" y="147" fill="#FFFFFF" font-size="6.8" text-anchor="middle">Secret Redactor Pipeline</text>
+
+          <!-- Module 3: Git Shadow Undo -->
+          <rect x="330" y="82" width="150" height="74" rx="4" fill="#15181E" stroke="#2B313D"/>
+          <text x="405" y="97" fill="#FFFFFF" font-size="7.5" font-weight="700" text-anchor="middle">GIT SHADOW UNDO</text>
+          <text x="405" y="111" fill="#D4D4D8" font-size="6.8" text-anchor="middle">git write-tree Plumbing</text>
+          <text x="405" y="123" fill="#D4D4D8" font-size="6.8" text-anchor="middle">refs/cairn/checkpoints/*</text>
+          <text x="405" y="135" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Sub-20ms Atomic Restore</text>
+          <text x="405" y="147" fill="#FFFFFF" font-size="6.8" text-anchor="middle">Zero Git Log Pollution</text>
+
+          <!-- Module 4: OS Window & Input Bridge -->
+          <rect x="490" y="82" width="165" height="74" rx="4" fill="#15181E" stroke="#2B313D"/>
+          <text x="572" y="97" fill="#FFFFFF" font-size="7.5" font-weight="700" text-anchor="middle">OS WINDOW BRIDGE</text>
+          <text x="572" y="111" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Win32 / ScreenCaptureKit</text>
+          <text x="572" y="123" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Window HWND Enumeration</text>
+          <text x="572" y="135" fill="#D4D4D8" font-size="6.8" text-anchor="middle">Low-Latency WebRTC Stream</text>
+          <text x="572" y="147" fill="#FFFFFF" font-size="6.8" text-anchor="middle">WebAuthn Biometric Pass</text>
+
+          <!-- Downward connections -->
+          <line x1="170" y1="168" x2="170" y2="185" stroke="#FFFFFF" stroke-width="1.5"/>
+          <line x1="570" y1="168" x2="570" y2="185" stroke="#FFFFFF" stroke-width="1.5"/>
+
+          <!-- Bottom Target 1: Model Providers -->
+          <rect x="50" y="185" width="240" height="24" rx="4" fill="#15181E" stroke="#FFFFFF"/>
+          <text x="170" y="201" fill="#FFFFFF" font-size="7.5" font-weight="600" text-anchor="middle">
+            OpenAI · Anthropic · OpenRouter · Ollama · NIM
+          </text>
+
+          <!-- Bottom Target 2: Supervised Interfaces -->
+          <rect x="420" y="185" width="240" height="24" rx="4" fill="#15181E" stroke="#FFFFFF"/>
+          <text x="540" y="201" fill="#FFFFFF" font-size="7.5" font-weight="600" text-anchor="middle">
+            IDE Extension · Mobile PWA · Web Cockpit
+          </text>
+        </svg>
+      </div>
+
+      <h2>6. Component Performance &amp; SLA Benchmarks</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Module Name</th>
+            <th>Primary Function</th>
+            <th>Measured SLA</th>
+            <th>Fault-Tolerance Guarantee</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Dual Gateway Proxy</strong></td>
+            <td>Translates OpenAI &amp; Anthropic formats to internal schema</td>
+            <td>&lt; 14.8 ms added latency</td>
+            <td>Fail-safe pass-through; never corrupts stream payload</td>
+          </tr>
+          <tr>
+            <td><strong>Tool Interceptor</strong></td>
+            <td>Reconstructs JSON tool blocks in-flight for risk scoring</td>
+            <td>&lt; 1.8 ms inspection lag</td>
+            <td>Holds medium/high risk until explicit approval confirmation</td>
+          </tr>
+          <tr>
+            <td><strong>Git Shadow Engine</strong></td>
+            <td>Off-branch commit-free workspace snapshotting</td>
+            <td>18.4 ms per snapshot</td>
+            <td>100% atomic rollback; completely isolated from user git log</td>
+          </tr>
+          <tr>
+            <td><strong>OS Window Bridge</strong></td>
+            <td>HWND grab &amp; input injection for Antigravity &amp; Visual Studio</td>
+            <td>&lt; 120 ms WebRTC latency</td>
+            <td>Target window only; zero full-desktop exposure leak</td>
+          </tr>
+          <tr>
+            <td><strong>Local SQLite Ledger</strong></td>
+            <td>Records prompt hashes, token usage, latency &amp; calibration</td>
+            <td>&lt; 0.6 ms write/read</td>
+            <td>WAL mode persistence with automated secret redaction</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 5 &amp; 6</div>
+      <div class="page-num">PAGE 04</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 5: PRD COST ESTIMATOR & WHAT-IF ENGINE                               -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Module Deep-Dive: Cost Forecasting &amp; What-If Modeling</span>
+      </div>
+      <div class="header-tag">Estimator Engine</div>
+    </div>
+
+    <div class="page-content">
+      <h2>7. The PRD Cost Estimator</h2>
+      <p>
+        The Cairn Estimator is the world's first repository-aware, cache-aware forecasting engine for autonomous agent projects. It takes any structured PRD or brief and simulates full execution across models:
+      </p>
+
+      <div class="screenshot-frame" style="max-height: 180px;">
+        <img src="{{COST_IMG}}" alt="Cairn Cost Estimator Interface">
+      </div>
+      <div class="screenshot-caption">Figure 2.1: Cairn Estimator — Real-time Task Graph Decomposition, Token Caching math, and What-If comparison matrix.</div>
+
+      <div class="grid-2" style="margin-top: 8px;">
+        <div class="card">
+          <h3 style="color: #FFFFFF;">PRD Decomposition &amp; Sizing</h3>
+          <p style="font-size: 8.5px; margin: 0;">
+            Cairn analyzes natural-language PRD specifications, extracting atomic functional requirements. Tasks are categorized by complexity:
+          </p>
+          <ul style="font-size: 8px; color: #A1A1AA; margin-left: 12px; margin-top: 3px;">
+            <li><strong>Low (4 turns):</strong> Boilerplate, configuration, simple routes.</li>
+            <li><strong>Medium (8 turns):</strong> CRUD flows, database schemas, standard UI.</li>
+            <li><strong>High (15 turns):</strong> Auth systems, streaming protocols, parsers.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3 style="color: #FFFFFF;">Repository Context Overhead</h3>
+          <p style="font-size: 8.5px; margin: 0;">
+            The built-in AST scanner crawls local repository directories. Codebases with extensive test suites and high lines-of-code apply an empirical brownfield multiplier (1.25x – 1.65x) to model the extra context tokens ingested during turn-1 discovery.
+          </p>
+        </div>
+      </div>
+
+      <h2>8. Real-World Forecast Benchmark (CAIRN_ESTIMATE.md)</h2>
+      <p>
+        When executed on the Cairn monorepo PRD (65 tasks, 29 files, 6,087 LOC), Cairn produced the following verified forecast:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario / Candidate Model</th>
+            <th>Expected Token Volume</th>
+            <th>Expected Spend</th>
+            <th>Relative Variance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Claude 3.7 Sonnet (Baseline)</strong></td>
+            <td>34,956,514 tokens (23.9M cached)</td>
+            <td><strong style="color: #FFFFFF;">$71.13</strong> ($48.06 – $107.66)</td>
+            <td>Baseline Model</td>
+          </tr>
+          <tr>
+            <td><strong>Hybrid (Smart for High, Fast for Low)</strong></td>
+            <td>34,120,400 tokens</td>
+            <td><strong style="color: #FFFFFF;">$69.34</strong></td>
+            <td>3% cheaper</td>
+          </tr>
+          <tr>
+            <td><strong>GPT-4o (OpenAI Cloud)</strong></td>
+            <td>34,956,514 tokens</td>
+            <td><strong style="color: #FFFFFF;">$72.60</strong></td>
+            <td>2% more expensive</td>
+          </tr>
+          <tr>
+            <td><strong>DeepSeek V3 (OpenRouter)</strong></td>
+            <td>34,956,514 tokens</td>
+            <td><strong style="color: #FFFFFF;">$6.32</strong></td>
+            <td>91% cheaper</td>
+          </tr>
+          <tr>
+            <td><strong>Qwen 2.5 Coder 14B (Local Ollama)</strong></td>
+            <td>34,956,514 tokens</td>
+            <td><strong style="color: #FFFFFF;">$0.00 (Local API)</strong></td>
+            <td>100% cloud savings</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 7 &amp; 8</div>
+      <div class="page-num">PAGE 05</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 6: GIT SHADOW SNAPSHOTS & REVERSIBLE SAFETY                          -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Module Deep-Dive: Git Shadow Snapshots &amp; Reversible Safety</span>
+      </div>
+      <div class="header-tag">Safety Layer</div>
+    </div>
+
+    <div class="page-content">
+      <h2>9. The Git Shadow Undo Engine</h2>
+      <p>
+        The most disruptive risk of autonomous agents is silent repository corruption. Cairn introduces <strong>Git Shadow Snapshots</strong>: a sub-20ms checkpoint engine built on low-level Git plumbing that operates completely off-branch without making dummy commits:
+      </p>
+
+      <div class="screenshot-frame" style="max-height: 180px;">
+        <img src="{{SAFETY_IMG}}" alt="Cairn Safety & Checkpoint Interface">
+      </div>
+      <div class="screenshot-caption">Figure 3.1: Cairn Safety Center — Git Shadow snapshot journal, diff preview inspector, and instant rollback trigger.</div>
+
+      <div class="grid-2" style="margin-top: 8px;">
+        <div class="card card-highlight">
+          <h3 style="color: #FFFFFF;">How Off-Branch Snapshots Work</h3>
+          <p style="font-size: 8.5px; margin: 0;">
+            1. Before executing any mutating action (<code>write_file</code>, <code>edit_file</code>, <code>bash</code>), Cairn executes <code>git write-tree</code> in the background.<br>
+            2. The raw SHA-1 tree object is written directly to <code>refs/cairn/checkpoints/&lt;run_id&gt;/&lt;step_id&gt;</code>.<br>
+            3. The user's current branch head (<code>HEAD</code>) and <code>git log</code> remain 100% pristine and unpolluted.
+          </p>
+        </div>
+
+        <div class="card card-highlight">
+          <h3 style="color: #FFFFFF;">Sub-20ms Atomic Working Restore</h3>
+          <p style="font-size: 8.5px; margin: 0;">
+            When an agent introduces a regression or breaks 40 files:<br>
+            1. User clicks <strong>Revert Step</strong> in the IDE or on phone.<br>
+            2. Cairn executes <code>git read-tree &lt;tree_sha&gt;</code> followed by <code>git checkout-index -a -f</code>.<br>
+            3. The entire working directory is restored in under <strong>20 milliseconds</strong> without merge conflicts.
+          </p>
+        </div>
+      </div>
+
+      <h2>10. Safety Policy Precedence: Deny &gt; Ask &gt; Allow</h2>
+      <p>
+        Cairn classifies every tool execution through a declarative deterministic policy engine:
+      </p>
+
+      <div class="grid-3" style="margin-top: 6px;">
+        <div style="background: #111418; border: 1px solid #282D36; border-radius: 6px; padding: 8px;">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 9.5px; margin-bottom: 3px;">ALLOW (Zero Friction)</div>
+          <p style="font-size: 8px; color: #A1A1AA; margin: 0;">
+            Read-only queries: <code>read_file</code>, <code>list_dir</code>, <code>grep_search</code>, <code>run_tests</code>. Auto-forwarded instantly with zero latency penalty.
+          </p>
+        </div>
+
+        <div style="background: #111418; border: 1px solid #282D36; border-radius: 6px; padding: 8px;">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 9.5px; margin-bottom: 3px;">ASK (Gated Approval)</div>
+          <p style="font-size: 8px; color: #A1A1AA; margin: 0;">
+            Mutating actions: <code>write_file</code>, <code>edit_file</code>, <code>git_push</code>, <code>npm_install</code>. Stream paused; diff preview broadcast to IDE and phone.
+          </p>
+        </div>
+
+        <div style="background: #191214; border: 1px solid #3F1D21; border-radius: 6px; padding: 8px;">
+          <div style="color: #F87171; font-weight: 700; font-size: 9.5px; margin-bottom: 3px;">DENY (Hard Blocker)</div>
+          <p style="font-size: 8px; color: #FCA5A5; margin: 0;">
+            Known catastrophic patterns: <code>rm -rf /</code>, <code>drop database</code>, <code>git push --force main</code>. Blocked unconditionally with synthetic error.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 9 &amp; 10</div>
+      <div class="page-num">PAGE 06</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 7: MOBILE REMOTE & 3-LAYER IDE CONTROL                                -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Module Deep-Dive: Mobile Remote Cockpit &amp; Universal IDE Control</span>
+      </div>
+      <div class="header-tag">Mobile Remote</div>
+    </div>
+
+    <div class="page-content">
+      <h2>11. Mobile Remote &amp; Three-Layer Control</h2>
+      <p>
+        Developers should not be chained to their desks during 30-minute agent runs. Cairn serves a zero-install, responsive Progressive Web App (PWA) with a three-layer control hierarchy:
+      </p>
+
+      <div class="screenshot-frame" style="max-height: 180px;">
+        <img src="{{CONTROL_IMG}}" alt="Cairn Mobile Remote Interface">
+      </div>
+      <div class="screenshot-caption">Figure 4.1: Cairn Mobile Remote Cockpit — Biometric passkey, live tool approval diffs, and window streaming.</div>
+
+      <div class="grid-3" style="margin-top: 8px;">
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 9px; margin-bottom: 3px;">LAYER 1: STREAM GATEWAY</div>
+          <p style="font-size: 8px; margin: 0;">
+            Universal across all agents. Inspect live token burns, streaming thoughts, and tool call diffs. Approve, reject, or inject steering instructions into the active turn.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 9px; margin-bottom: 3px;">LAYER 2: IDE RPC BRIDGE</div>
+          <p style="font-size: 8px; margin: 0;">
+            Bi-directional WebSocket bridge to Antigravity IDE, VS Code, and Cursor. Trigger editor commands, accept/reject inline diffs, switch files, and send prompts.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 9px; margin-bottom: 3px;">LAYER 3: OS WINDOW BRIDGE</div>
+          <p style="font-size: 8px; margin: 0;">
+            Low-latency WebRTC video stream of target IDE windows (<code>Antigravity.exe</code>, <code>devenv.exe</code>). Translates mobile touch taps and macros directly into native Win32 window inputs.
+          </p>
+        </div>
+      </div>
+
+      <div class="card card-highlight" style="margin-top: 6px;">
+        <strong style="color: #FFFFFF;">Hardware-Level Window Privacy &amp; WebAuthn Biometrics</strong>
+        <p style="font-size: 8.5px; margin-top: 3px; margin-bottom: 0;">
+          Unlike traditional VNC or remote desktop software that broadcasts your entire desktop, Cairn's OS Window Bridge binds exclusively to the designated IDE process handle (<code>HWND</code>). Your personal browser windows, messaging apps, and local files cannot be seen. High-risk operations require TouchID, FaceID, or hardware passkey verification.
+        </p>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 11</div>
+      <div class="page-num">PAGE 07</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 8: INSTALLATION, CONFIGURATION & CLI HANDBOOK                         -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Operational Handbook: Setup, Configuration &amp; CLI</span>
+      </div>
+      <div class="header-tag">Installation</div>
+    </div>
+
+    <div class="page-content">
+      <h2>12. Installation &amp; Quick Start</h2>
+      <p>
+        Cairn is engineered as an open-source monorepo running on Node.js (v20+ or v24+). Get up and running in under 5 minutes:
+      </p>
+
+      <div class="code-block">
+<span class="token-cmt"># 1. Clone repository &amp; install dependencies</span>
+git clone https://github.com/cairn-studios/cairn.git &amp;&amp; cd cairn
+npm install
+
+<span class="token-cmt"># 2. Build core modules (Core, Daemon, Extension)</span>
+npm run build
+
+<span class="token-cmt"># 3. Start local Daemon, Gateway &amp; Mobile Remote Server</span>
+npm run cairn start -- --port 4100
+      </div>
+
+      <h2>13. Agent Configuration (Point &amp; Protect)</h2>
+      <div class="grid-2" style="margin-top: 5px; margin-bottom: 8px;">
+        <div class="card">
+          <strong style="color: #FFFFFF; font-size: 9.5px;">Antigravity IDE &amp; Cursor</strong>
+          <p style="font-size: 8px; margin: 3px 0;">
+            Set OpenAI Base URL to <code>http://localhost:4100/v1</code>.<br>
+            Set API Key to any string (e.g. <code>cairn</code>).
+          </p>
+        </div>
+
+        <div class="card">
+          <strong style="color: #FFFFFF; font-size: 9.5px;">Claude Code CLI</strong>
+          <p style="font-size: 8px; margin: 3px 0;">
+            <code>export</code> ANTHROPIC_BASE_URL="http://localhost:4100"<br>
+            <code>export</code> ANTHROPIC_API_KEY="cairn"
+          </p>
+        </div>
+      </div>
+
+      <h2>14. CLI Command Cheat Sheet</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>Arguments / Options</th>
+            <th>Description &amp; Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>cairn start</code></td>
+            <td><code>--port 4100</code></td>
+            <td>Launches background daemon, gateway endpoints &amp; serves Mobile PWA</td>
+          </tr>
+          <tr>
+            <td><code>cairn estimate</code></td>
+            <td><code>&lt;PRD.md&gt; [--model smart]</code></td>
+            <td>Parses PRD, crawls workspace &amp; prints Low/Expected/High cost range</td>
+          </tr>
+          <tr>
+            <td><code>cairn status</code></td>
+            <td><em>none</em></td>
+            <td>Displays project spend, daily burn, active checkpoints &amp; calibration error</td>
+          </tr>
+          <tr>
+            <td><code>cairn checkpoints</code></td>
+            <td><em>none</em></td>
+            <td>Lists all available off-branch Git shadow tree snapshots</td>
+          </tr>
+          <tr>
+            <td><code>cairn undo</code></td>
+            <td><code>[checkpoint-id]</code></td>
+            <td>Instantly reverts working tree to designated shadow snapshot (&lt; 20ms)</td>
+          </tr>
+          <tr>
+            <td><code>cairn windows</code></td>
+            <td><em>none</em></td>
+            <td>Lists active developer IDE windows for low-latency WebRTC streaming</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>15. Policy Schema Reference (cairn.yaml)</h2>
+      <div class="code-block" style="margin-bottom: 0;">
+<span class="token-kw">project:</span> my-service
+<span class="token-kw">budgets:</span>
+  <span class="token-kw">project:</span> { <span class="token-str">usd:</span> <span class="token-num">40.00</span> }
+  <span class="token-kw">daily:</span>   { <span class="token-str">usd:</span> <span class="token-num">10.00</span> }
+  <span class="token-kw">task:</span>    { <span class="token-str">usd:</span> <span class="token-num">3.00</span>, <span class="token-str">exhaustion_mode:</span> <span class="token-str">wind_down</span> }
+<span class="token-kw">routing:</span>
+  <span class="token-kw">default:</span> smart
+  <span class="token-kw">on_budget_80:</span> fast_at_task_boundary   <span class="token-cmt"># Cache-safe downgrade</span>
+  <span class="token-kw">on_budget_100:</span> wind_down_then_block    <span class="token-cmt"># Synthetic instruction</span>
+<span class="token-kw">aliases:</span>
+  <span class="token-kw">smart:</span> anthropic/claude-3-7-sonnet
+  <span class="token-kw">fast:</span>  google/gemini-3.8-flash
+  <span class="token-kw">local:</span> ollama/qwen2.5-coder:14b
+<span class="token-kw">actions:</span>
+  <span class="token-kw">allow:</span> [read_file, list_dir, grep_search, run_tests]
+  <span class="token-kw">ask:</span>   [write_file, edit_file, git_push, bash]
+  <span class="token-kw">deny:</span>  [rm_rf_root, drop_database, git_push_force_main]
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 12–15</div>
+      <div class="page-num">PAGE 08</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- PAGE 9: VERIFICATION, COMPETITIVE MATRIX & ROADMAP                         -->
+  <!-- ========================================================================= -->
+  <div class="page">
+    <div class="page-header">
+      <div class="header-left">
+        <img src="{{LOGO_IMG}}" class="header-logo" alt="Logo">
+        <span>Verification Benchmarks, Competitive Landscape &amp; Roadmap</span>
+      </div>
+      <div class="header-tag">Validation</div>
+    </div>
+
+    <div class="page-content">
+      <h2>16. Test Suite &amp; System Guarantees</h2>
+      <p>
+        Cairn ships with a comprehensive integration test suite enforcing core mathematical and architectural invariants:
+      </p>
+
+      <div class="code-block">
+<span class="token-kw">$ npm test</span>
+▶ @cairn/core — Policy, Pricing, Safety &amp; Estimator
+  ✔ parses cairn.yaml and enforces rule precedence (deny &gt; ask &gt; allow)
+  ✔ calculates cache-aware token costs accurately
+  ✔ detects prompt injection and redacts secrets in traces
+  ✔ builds a repo-aware and cache-aware PRD estimate with What-If scenarios
+✔ @cairn/core (13.9ms)
+
+▶ @cairn/daemon — Gateway, Git Shadow Undo, Budgets &amp; Mobile Remote
+  ✔ routes OpenAI (/v1/chat/completions) and Anthropic (/v1/messages) with task attribution
+  ✔ intercepts ask-level tool calls, approves via Mobile API, creates Git Shadow Snapshot, and undoes file changes
+  ✔ serves Mobile Remote Cockpit PWA, queues steering instructions, and captures IDE window frames
+  ✔ updates calibration multipliers after task completion (CAL-1..CAL-3)
+✔ @cairn/daemon (2110.4ms)
+
+<span class="token-kw">ℹ tests 8 · suites 2 · passed 8 · failed 0 · duration 2.58s (100% PASS RATE)</span>
+      </div>
+
+      <h2>17. Competitive Positioning Matrix</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature / Capability</th>
+            <th>Cairn</th>
+            <th>LiteLLM / Portkey</th>
+            <th>Helicone</th>
+            <th>AnyDesk / TeamViewer</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PRD-to-Cost Token Forecaster</strong></td>
+            <td><strong style="color: #FFFFFF;">Native (Cache-Aware)</strong></td>
+            <td>No (Runtime only)</td>
+            <td>No (Runtime only)</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><strong>Sub-20ms Git Shadow Rollback</strong></td>
+            <td><strong style="color: #FFFFFF;">Native Off-Branch</strong></td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><strong>Task-Boundary Cache Downgrade</strong></td>
+            <td><strong style="color: #FFFFFF;">Yes (Preserves Cache)</strong></td>
+            <td>Mid-stream (busts cache)</td>
+            <td>No</td>
+            <td>No</td>
+          </tr>
+          <tr>
+            <td><strong>Hardware-Scoped IDE Window Stream</strong></td>
+            <td><strong style="color: #FFFFFF;">Target Process Only</strong></td>
+            <td>No</td>
+            <td>No</td>
+            <td>Full Desktop Leak</td>
+          </tr>
+          <tr>
+            <td><strong>WebAuthn Biometric Approvals</strong></td>
+            <td><strong style="color: #FFFFFF;">Yes (FaceID / Fingerprint)</strong></td>
+            <td>No</td>
+            <td>No</td>
+            <td>Password only</td>
+          </tr>
+          <tr>
+            <td><strong>Self-Learning Codebase Calibration</strong></td>
+            <td><strong style="color: #FFFFFF;">Yes (Bayesian Moat)</strong></td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>18. Product Roadmap &amp; Milestones</h2>
+      <div class="grid-3" style="margin-top: 6px;">
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 8.5px; margin-bottom: 3px;">PHASE 1: FOUNDATION (DONE)</div>
+          <p style="font-size: 7.8px; color: #A1A1AA; margin: 0;">
+            Dual Gateway proxy, Git shadow checkpoints, PRD estimator CLI, and baseline pricing registry.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 8.5px; margin-bottom: 3px;">PHASE 2: MOBILE &amp; IDE (ACTIVE)</div>
+          <p style="font-size: 7.8px; color: #A1A1AA; margin: 0;">
+            Mobile PWA cockpit, QR pairing, WebAuthn biometrics, Win32 window stream, and IDE extension bridge.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="color: #FFFFFF; font-weight: 700; font-size: 8.5px; margin-bottom: 3px;">PHASE 3: ENTERPRISE (NEXT)</div>
+          <p style="font-size: 7.8px; color: #A1A1AA; margin: 0;">
+            Cross-team shared budget pools, automated prompt injection fuzzing, and OpenTelemetry telemetry export.
+          </p>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 10px; padding: 8px; border-top: 1px solid #22262C;">
+        <p style="font-size: 9.5px; color: #FFFFFF; font-weight: 600; margin-bottom: 2px;">
+          Cairn Control Plane · Open Source Engineering Architecture
+        </p>
+        <p style="font-size: 8px; color: #71717A; margin: 0;">
+          Designed and engineered for software teams building with autonomous AI coding agents.<br>
+          <em>Forecast. Supervise. Stay in control.</em>
+        </p>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <div>Cairn Technical Whitepaper · Section 16–18</div>
+      <div class="page-num">PAGE 09</div>
+    </div>
+  </div>
+
+</body>
+</html>
