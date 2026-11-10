@@ -6,6 +6,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { execFileSync } from 'node:child_process';
 import { CairnDaemonServer } from './gateway/server.js';
+import { isSameProject, normalizeClaudeModelId, parseClaudeSession, readFileTail } from './telemetry/antigravity-sync.js';
 import {
   normalizeMessagesToAnthropic,
   normalizeMessagesToOpenAi,
@@ -641,5 +642,60 @@ actions:
     assert.equal(histData.ok, true);
     assert.ok(histData.models.some((m) => m.id === 'Llama-3.3-70B'));
     assert.equal(histData.history.length, 2);
+  });
+});
+
+describe('Claude Code harness auto-detection helpers', () => {
+  it('maps Claude Code model ids to catalog ids', () => {
+    assert.equal(normalizeClaudeModelId('claude-opus-5-5'), 'anthropic/claude-opus-5.5');
+    assert.equal(normalizeClaudeModelId('claude-sonnet-4-5-20250929'), 'anthropic/claude-sonnet-4.5');
+    assert.equal(normalizeClaudeModelId('anthropic/claude-sonnet-5.5'), 'anthropic/claude-sonnet-5.5');
+    assert.equal(normalizeClaudeModelId('gpt-5-codex'), 'gpt-5-codex');
+  });
+
+  it('matches a session cwd to the project dir, its subfolders, and its parent repo root', () => {
+    const project = path.join(os.tmpdir(), 'repo', 'main');
+    assert.equal(isSameProject(project, project), true);
+    assert.equal(isSameProject(path.join(project, 'packages', 'daemon'), project), true);
+    assert.equal(isSameProject(path.join(os.tmpdir(), 'repo'), project), true);
+    assert.equal(isSameProject(path.join(os.tmpdir(), 'other-repo'), project), false);
+    assert.equal(isSameProject(os.tmpdir(), project), false);
+  });
+
+  it('parses a Claude Code session log into turns, usage and a feed', () => {
+    const lines = [
+      { type: 'user', timestamp: '2026-01-01T00:00:00Z', message: { role: 'user', content: 'Fix the login bug' } },
+      { type: 'user', isMeta: true, timestamp: '2026-01-01T00:00:00Z', message: { role: 'user', content: 'meta noise' } },
+      { type: 'user', timestamp: '2026-01-01T00:00:00Z', message: { role: 'user', content: '<command-name>/clear</command-name>' } },
+      // Streamed: the same message id appears twice; the last usage wins and tools accumulate.
+      { type: 'assistant', timestamp: '2026-01-01T00:00:01Z', message: { id: 'msg_1', model: 'claude-opus-5-5', content: [{ type: 'tool_use', name: 'Read' }], usage: { input_tokens: 10, cache_read_input_tokens: 100, cache_creation_input_tokens: 5, output_tokens: 1 } } },
+      { type: 'assistant', timestamp: '2026-01-01T00:00:02Z', message: { id: 'msg_1', model: 'claude-opus-5-5', content: [{ type: 'tool_use', name: 'Edit' }], usage: { input_tokens: 10, cache_read_input_tokens: 100, cache_creation_input_tokens: 5, output_tokens: 20 } } },
+      { type: 'assistant', timestamp: '2026-01-01T00:00:03Z', message: { id: 'msg_2', model: 'claude-opus-5-5', content: [{ type: 'text', text: 'Fixed it.' }], usage: { input_tokens: 2, cache_read_input_tokens: 50, output_tokens: 8 } } },
+      { type: 'assistant', timestamp: '2026-01-01T00:00:04Z', message: { id: 'msg_3', model: '<synthetic>', content: [], usage: { input_tokens: 0, output_tokens: 0 } } },
+      'not json',
+    ];
+    const parsed = parseClaudeSession(lines.map((l) => (typeof l === 'string' ? l : JSON.stringify(l))).join('\n'));
+
+    assert.equal(parsed.steps, 2);
+    assert.equal(parsed.modelId, 'anthropic/claude-opus-5.5');
+    assert.deepEqual(parsed.turns[0].tools, ['Read', 'Edit']);
+    assert.equal(parsed.turns[0].outputTokens, 20);
+    assert.deepEqual(parsed.usage, { uncachedInput: 17, cachedRead: 150, output: 28, total: 195 });
+    assert.ok(parsed.turns.every((t) => t.costUsd > 0));
+    assert.equal(parsed.events[0].stepIndex, 2, 'events are newest first');
+    assert.deepEqual(parsed.feed.map((f) => [f.role, f.text]), [['user', 'Fix the login bug'], ['assistant', 'Fixed it.']]);
+    assert.equal(parsed.lastActivityAt, '2026-01-01T00:00:03Z');
+  });
+
+  it('reads only the tail of large session logs', () => {
+    const file = path.join(os.tmpdir(), `cairn-tail-${process.pid}.jsonl`);
+    fs.writeFileSync(file, 'x'.repeat(5000) + '\n{"cwd":"/a","message":{"model":"claude-opus-5-5"}}\n');
+    try {
+      const tail = readFileTail(file, 200);
+      assert.ok(tail.length <= 200);
+      assert.ok(tail.includes('"model":"claude-opus-5-5"'));
+    } finally {
+      fs.rmSync(file, { force: true });
+    }
   });
 });

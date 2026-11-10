@@ -158,6 +158,224 @@ const HARNESS_LABELS: Record<AgentHarnessType, string> = {
  * detecting switches to Claude Code, OpenCode, or Hermes (via local config/logs or gateway traffic),
  * dynamically adapting the model catalog and recalculating live session & PRD costs.
  */
+/** Reads at most the last `maxBytes` of a file (session logs can be many MB). */
+export function readFileTail(file: string, maxBytes: number): string {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(file, 'r');
+    const size = fs.fstatSync(fd).size;
+    const length = Math.min(size, maxBytes);
+    const buf = Buffer.alloc(length);
+    fs.readSync(fd, buf, 0, length, size - length);
+    return buf.toString('utf-8');
+  } catch {
+    return '';
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+/**
+ * True when an agent's working directory belongs to this project: the project dir itself,
+ * anything inside it, or its immediate parent (e.g. the repo root when Cairn runs from `main/`).
+ */
+export function isSameProject(agentCwd: string, projectDir: string): boolean {
+  const norm = (p: string) => path.resolve(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
+  const cwd = norm(agentCwd);
+  const project = norm(projectDir);
+  return cwd === project || cwd.startsWith(project + '/') || cwd === norm(path.dirname(projectDir));
+}
+
+/** Maps Claude Code model ids (`claude-opus-5-5`, `claude-sonnet-4-5-20250929`) to catalog ids. */
+export function normalizeClaudeModelId(model: string): string {
+  const m = model.match(/^(?:anthropic\/)?claude-([a-z]+)-(\d+)-(\d+)(?:-\d{8})?$/);
+  return m ? `anthropic/claude-${m[1]}-${m[2]}.${m[3]}` : model;
+}
+
+/**
+ * Parses a Claude Code session log (~/.claude/projects/<dir>/<session>.jsonl) into live activity:
+ * one turn per assistant message id (streamed lines repeat the id; the last usage wins),
+ * plus the user prompts and assistant replies for the conversation feed.
+ */
+export function parseClaudeSession(raw: string, aliases: Record<string, string> = {}) {
+  type Turn = {
+    messageId: string;
+    stepIndex: number;
+    modelId: string;
+    modelDisplayName: string;
+    inputTokens: number;
+    cachedTokens: number;
+    cacheWriteTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    tools: string[];
+    text: string;
+    summary: string;
+    timestamp: string;
+  };
+  const turns = new Map<string, Turn>();
+  const feed: ConversationFeedItem[] = [];
+  let lastModelId: string | undefined;
+  let lastActivityAt: string | null = null;
+
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let ev: {
+      type?: string;
+      isMeta?: boolean;
+      timestamp?: string;
+      message?: {
+        id?: string;
+        model?: string;
+        content?: unknown;
+        usage?: Record<string, number>;
+      };
+    };
+    try {
+      ev = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    const timestamp = typeof ev.timestamp === 'string' ? ev.timestamp : '';
+    const msg = ev.message;
+    if (!msg) continue;
+
+    if (ev.type === 'user' && !ev.isMeta) {
+      const parts = typeof msg.content === 'string'
+        ? [msg.content]
+        : Array.isArray(msg.content)
+        ? msg.content
+            .filter((c: { type?: string; text?: unknown }) => c?.type === 'text' && typeof c.text === 'string')
+            .map((c: { text: string }) => c.text)
+        : [];
+      const text = parts.join('\n').trim();
+      if (text && !text.startsWith('<')) {
+        feed.push({
+          id: `cc_user_${feed.length}`,
+          stepIndex: turns.size,
+          role: 'user',
+          source: 'ide',
+          modelDisplayName: 'You (Claude Code)',
+          text: text.slice(0, 600),
+          tools: [],
+          inputTokens: 0,
+          cachedTokens: 0,
+          outputTokens: 0,
+          costUsd: 0,
+          timestamp,
+        });
+      }
+      continue;
+    }
+
+    if (ev.type !== 'assistant' || !msg.id || !msg.usage) continue;
+    if (typeof msg.model === 'string' && msg.model.startsWith('<')) continue; // <synthetic>
+    const modelId = normalizeClaudeModelId(msg.model ?? lastModelId ?? 'anthropic/claude-sonnet-5.5');
+    lastModelId = modelId;
+    let turn = turns.get(msg.id);
+    if (!turn) {
+      const cap = resolveModelAndProvider(modelId, aliases);
+      turn = {
+        messageId: msg.id,
+        stepIndex: turns.size + 1,
+        modelId: cap.id,
+        modelDisplayName: cap.displayName,
+        inputTokens: 0,
+        cachedTokens: 0,
+        cacheWriteTokens: 0,
+        outputTokens: 0,
+        costUsd: 0,
+        tools: [],
+        text: '',
+        summary: '',
+        timestamp,
+      };
+      turns.set(msg.id, turn);
+    }
+    const u = msg.usage;
+    turn.inputTokens = Number(u.input_tokens ?? 0);
+    turn.cachedTokens = Number(u.cache_read_input_tokens ?? 0);
+    turn.cacheWriteTokens = Number(u.cache_creation_input_tokens ?? 0);
+    turn.outputTokens = Number(u.output_tokens ?? 0);
+    if (Array.isArray(msg.content)) {
+      for (const c of msg.content as Array<{ type?: string; name?: unknown; text?: unknown }>) {
+        if (c?.type === 'tool_use' && typeof c.name === 'string' && !turn.tools.includes(c.name)) {
+          turn.tools.push(c.name);
+        } else if (c?.type === 'text' && typeof c.text === 'string' && c.text.trim()) {
+          turn.text = turn.text ? `${turn.text}\n${c.text.trim()}` : c.text.trim();
+        }
+      }
+    }
+    if (timestamp) lastActivityAt = timestamp;
+  }
+
+  const usage = { uncachedInput: 0, cachedRead: 0, output: 0, total: 0 };
+  for (const turn of turns.values()) {
+    const cap = resolveModelAndProvider(turn.modelId, aliases);
+    turn.costUsd = calculateCallCostUsd(
+      {
+        inputTokens: turn.inputTokens,
+        cacheReadTokens: turn.cachedTokens,
+        cacheWriteTokens: turn.cacheWriteTokens,
+        outputTokens: turn.outputTokens,
+        reasoningTokens: 0,
+      },
+      cap
+    );
+    turn.summary = turn.text
+      ? turn.text.replace(/\s+/g, ' ').slice(0, 160)
+      : turn.tools.length
+      ? `Claude Code ran ${turn.tools.join(', ')}`
+      : 'Claude Code completed an agent turn';
+    usage.uncachedInput += turn.inputTokens + turn.cacheWriteTokens;
+    usage.cachedRead += turn.cachedTokens;
+    usage.output += turn.outputTokens;
+    if (turn.text) {
+      feed.push({
+        id: `cc_asst_${turn.messageId}`,
+        stepIndex: turn.stepIndex,
+        role: 'assistant',
+        source: 'ide',
+        modelDisplayName: turn.modelDisplayName,
+        text: turn.text.slice(0, 1200),
+        tools: turn.tools.map((name) => ({ name, detail: '' })),
+        inputTokens: turn.inputTokens,
+        cachedTokens: turn.cachedTokens,
+        outputTokens: turn.outputTokens,
+        costUsd: turn.costUsd,
+        timestamp: turn.timestamp,
+      });
+    }
+  }
+  usage.total = usage.uncachedInput + usage.cachedRead + usage.output;
+
+  const turnList = [...turns.values()];
+  const events: AntigravityLiveState['recentEvents'] = turnList.slice(-15).reverse().map((t) => ({
+    stepIndex: t.stepIndex,
+    type: 'agent_turn',
+    harnessLabel: 'Claude Code',
+    modelDisplayName: t.modelDisplayName,
+    inputTokens: t.inputTokens + t.cacheWriteTokens,
+    cachedTokens: t.cachedTokens,
+    outputTokens: t.outputTokens,
+    costUsd: t.costUsd,
+    tools: t.tools,
+    summary: t.summary,
+    timestamp: t.timestamp,
+  }));
+  feed.sort((a, b) => (Date.parse(a.timestamp) || 0) - (Date.parse(b.timestamp) || 0));
+
+  return {
+    turns: turnList,
+    events,
+    feed: feed.slice(-16),
+    usage,
+    steps: turnList.length,
+    lastActivityAt,
+    modelId: lastModelId,
+  };
+}
+
 export class AntigravityLiveSync {
   private readonly syncedStepIds = new Set<string>();
   private activeModelOverride: string | null = null;
@@ -530,10 +748,141 @@ export class AntigravityLiveSync {
   }
 
   /**
-   * Probes local config files for OpenCode (~/.config/opencode/opencode.json) or Claude Code (~/.claude.json)
-   * if no explicit override is set, while keeping Antigravity IDE as primary when active.
+   * Finds the newest Claude Code session for this project.
+   * Sessions live in ~/.claude/projects/<encoded-cwd>/<session>.jsonl, where the folder name is the
+   * session cwd with every non-alphanumeric character replaced by '-'. Only folders for this repo
+   * (the project dir's parent and below) are scanned; each candidate is confirmed by the `cwd`
+   * recorded in its log. `maxAgeMs` limits the search to recently written sessions.
    */
-  private detectExternalHarnessConfig(): { harness: AgentHarnessType; modelId?: string } | null {
+  private findClaudeSession(maxAgeMs?: number): { file: string; mtime: number; modelId?: string } | null {
+    const root = path.join(os.homedir(), '.claude', 'projects');
+    const encode = (p: string) => path.resolve(p).replace(/[^A-Za-z0-9]/g, '-').toLowerCase();
+    const repoPrefix = encode(path.dirname(this.projectDir));
+    const now = Date.now();
+    let dirs: fs.Dirent[];
+    try {
+      dirs = fs.readdirSync(root, { withFileTypes: true });
+    } catch {
+      return null;
+    }
+    const candidates: Array<{ file: string; mtime: number }> = [];
+    for (const d of dirs) {
+      if (!d.isDirectory() || !d.name.toLowerCase().startsWith(repoPrefix)) continue;
+      const dir = path.join(root, d.name);
+      let files: string[];
+      try {
+        files = fs.readdirSync(dir);
+      } catch {
+        continue;
+      }
+      for (const name of files) {
+        if (!name.endsWith('.jsonl')) continue;
+        try {
+          const mtime = fs.statSync(path.join(dir, name)).mtimeMs;
+          if (maxAgeMs === undefined || now - mtime < maxAgeMs) {
+            candidates.push({ file: path.join(dir, name), mtime });
+          }
+        } catch {
+          // File vanished between readdir and stat.
+        }
+      }
+    }
+    candidates.sort((a, b) => b.mtime - a.mtime);
+    for (const { file, mtime } of candidates.slice(0, 8)) {
+      const tail = readFileTail(file, 256 * 1024);
+      let cwd: string | null = null;
+      let model: string | undefined;
+      for (const line of tail.split(/\r?\n/)) {
+        if (!line.includes('"cwd"') && !line.includes('"model"')) continue;
+        try {
+          const ev = JSON.parse(line) as { cwd?: unknown; message?: { model?: unknown } };
+          if (typeof ev.cwd === 'string') cwd = ev.cwd;
+          if (typeof ev.message?.model === 'string' && !ev.message.model.startsWith('<')) {
+            model = ev.message.model;
+          }
+        } catch {
+          // The first line of a tail read is usually partial.
+        }
+      }
+      if (cwd && isSameProject(cwd, this.projectDir)) {
+        return { file, mtime, modelId: model ? normalizeClaudeModelId(model) : undefined };
+      }
+    }
+    return null;
+  }
+
+  /** A Claude Code session for this project written to in the last 2 minutes. */
+  private detectClaudeCodeSession(): { modelId?: string; mtime: number } | null {
+    return this.findClaudeSession(120_000);
+  }
+
+  private claudeActivityCache: {
+    key: string;
+    result: ReturnType<typeof parseClaudeSession>;
+  } | null = null;
+
+  /**
+   * Reads the newest Claude Code session for this project as the live Activity source, and records
+   * each assistant turn as a call so it counts toward session cost (ids are stable, so no double count).
+   */
+  private readClaudeActivity(): (ReturnType<typeof parseClaudeSession> & { file: string }) | null {
+    const session = this.findClaudeSession();
+    if (!session) return null;
+    let size = 0;
+    try {
+      size = fs.statSync(session.file).size;
+    } catch {
+      return null;
+    }
+    const key = `${session.file}:${session.mtime}:${size}`;
+    if (this.claudeActivityCache?.key !== key) {
+      let raw = '';
+      try {
+        raw = fs.readFileSync(session.file, 'utf-8');
+      } catch {
+        return null;
+      }
+      const result = parseClaudeSession(raw, this.getPolicy().aliases);
+      this.claudeActivityCache = { key, result };
+
+      const sessionId = path.basename(session.file, '.jsonl');
+      const runId = `claude_${sessionId.slice(0, 8)}`;
+      for (const turn of result.turns) {
+        const callId = `cc_${sessionId.slice(0, 8)}_${turn.messageId}`;
+        if (this.syncedStepIds.has(callId)) continue;
+        this.syncedStepIds.add(callId);
+        const existing = this.db.db.prepare(`SELECT id FROM calls WHERE id = ?`).get(callId);
+        if (existing) continue;
+        this.db.recordCall({
+          id: callId,
+          runId,
+          taskId: 'claude-code-live',
+          model: turn.modelDisplayName,
+          provider: 'anthropic',
+          inputTokens: turn.inputTokens,
+          outputTokens: turn.outputTokens,
+          cacheWriteTokens: turn.cacheWriteTokens,
+          cacheReadTokens: turn.cachedTokens,
+          latencyMs: 0,
+          costUsd: turn.costUsd,
+          cacheHit: turn.cachedTokens > 0 ? 1 : 0,
+          promptPreview: `Claude Code Step #${turn.stepIndex}`,
+          responsePreview: turn.summary,
+        });
+      }
+    }
+    return { ...this.claudeActivityCache!.result, file: session.file };
+  }
+
+  /**
+   * Probes local sessions/configs for Codex, Claude Code (~/.claude/projects) and OpenCode
+   * if no explicit override is set; Antigravity IDE is the fallback.
+   */
+  private detectExternalHarnessConfig(): {
+    harness: AgentHarnessType;
+    modelId?: string;
+    source?: 'auto-transcript' | 'auto-config';
+  } | null {
     try {
       let codexRunning = false;
       if (process.platform === 'win32') {
@@ -577,6 +926,20 @@ export class AntigravityLiveSync {
         }
       }
     } catch { /* Codex CLI may not be installed or its session may be unavailable. */ }
+    const claude = this.detectClaudeCodeSession();
+    if (claude) {
+      // Keep Antigravity if its transcript was written more recently than the Claude session.
+      const ag = this.findLatestTranscript();
+      let agMtime = 0;
+      try {
+        if (ag) agMtime = fs.statSync(ag.transcriptPath).mtimeMs;
+      } catch {
+        agMtime = 0;
+      }
+      if (claude.mtime >= agMtime) {
+        return { harness: 'claude-code', modelId: claude.modelId, source: 'auto-transcript' };
+      }
+    }
     try {
       const opencodeConfig = path.join(os.homedir(), '.config', 'opencode', 'opencode.json');
       if (fs.existsSync(opencodeConfig)) {
@@ -641,7 +1004,7 @@ export class AntigravityLiveSync {
 
     const currentHarness: AgentHarnessType =
       this.activeHarnessOverride ?? externalConfig?.harness ?? 'antigravity';
-    if (!this.activeHarnessOverride && externalConfig) this.detectionSource = 'auto-config';
+    if (!this.activeHarnessOverride && externalConfig) this.detectionSource = externalConfig.source ?? 'auto-config';
     process.env.CAIRN_ACTIVE_IDE = currentHarness;
     const currentHarnessLabel = HARNESS_LABELS[currentHarness] ?? 'Antigravity IDE';
 
@@ -649,6 +1012,34 @@ export class AntigravityLiveSync {
       this.activeModelOverride ?? externalConfig?.modelId ?? policy.routing.default,
       policy.aliases
     );
+
+    if (currentHarness === 'claude-code') {
+      const claude = this.readClaudeActivity();
+      if (claude) {
+        const cap = !this.activeModelOverride && claude.modelId
+          ? resolveModelAndProvider(claude.modelId, policy.aliases)
+          : baseModelCap;
+        this.lastState.activeHarness = currentHarness;
+        this.lastState.activeHarnessLabel = currentHarnessLabel;
+        this.lastState.detectionSource = this.detectionSource;
+        this.lastState.activeModelId = cap.id;
+        this.lastState.activeModelDisplayName = cap.displayName;
+        this.lastState.activeModelCategory = cap.category ?? 'frontier';
+        this.lastState.activeModelDescription = cap.description ?? `${cap.provider} coding model`;
+        this.lastState.activeModelContextLength = cap.contextLength;
+        this.lastState.activeModelPromptCaching = cap.promptCaching;
+        this.lastState.connected = claude.steps > 0;
+        this.lastState.transcriptPath = claude.file;
+        this.lastState.conversationId = path.basename(claude.file, '.jsonl');
+        this.lastState.recentEvents = claude.events;
+        this.lastState.sessionTokens = claude.usage;
+        this.lastState.totalSteps = claude.steps;
+        this.lastState.lastActivityAt = claude.lastActivityAt;
+        this.lastState.conversationFeed = this.mergeConversationFeed(claude.feed);
+        this.lastState.sessionModelComparison = this.buildSessionComparison(claude.usage, cap.id);
+        return this.lastState;
+      }
+    }
 
     const latest = this.findLatestTranscript();
     if (!latest) {
@@ -1013,7 +1404,8 @@ export class AntigravityLiveSync {
       });
     }
 
-    const finalActiveCap = currentHarness === 'codex'
+    // Codex and Claude Code report their own model; the Antigravity transcript must not override it.
+    const finalActiveCap = currentHarness === 'codex' || currentHarness === 'claude-code'
       ? baseModelCap
       : this.activeModelOverride
       ? baseModelCap
