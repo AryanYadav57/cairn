@@ -1,12 +1,10 @@
 project: cairn-workspace
-budgets:
-  project:
-    usd: 40
-  daily:
-    usd: 10
-  task:
-    usd: 3
-    exhaustion_mode: wind_down
+# Cost caps are opt-in. With none set, Cairn just tracks session cost.
+# Set one from the dashboard (Home > Session cost > Set cost cap), or here, e.g.:
+#   budgets:
+#     project: { usd: 40, exhaustion_mode: wind_down }
+#     daily:   { usd: 10 }
+budgets: {}
 routing:
   default: smart
   on_budget_80: fast_at_task_boundary

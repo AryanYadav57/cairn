@@ -39,11 +39,8 @@ export const CairnPolicySchema = z.object({
       task: BudgetConfigSchema.optional(),
       session: BudgetConfigSchema.optional(),
     })
-    .default({
-      project: { usd: 40, thresholds: [50, 80, 95], exhaustion_mode: 'wind_down' },
-      daily: { usd: 10, thresholds: [50, 80, 95], exhaustion_mode: 'wind_down' },
-      task: { usd: 3, thresholds: [50, 80, 95], exhaustion_mode: 'wind_down' },
-    }),
+    // No caps by default: Cairn only tracks session cost until the user opts in to a cap.
+    .default({}),
   routing: RoutingPolicySchema.default({}),
   aliases: z
     .record(z.string(), z.string())

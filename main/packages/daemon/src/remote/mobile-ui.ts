@@ -291,13 +291,11 @@ export function renderMobileRemoteHtml(params: {
 
     .nav-btn.active {
       color: #ffffff;
-      border: 1px solid rgba(147, 197, 253, 0.36);
-      background: linear-gradient(180deg, rgba(96, 165, 250, 0.14) 0%, rgba(15, 23, 42, 0.35) 100%);
-      box-shadow:
-        inset 0 1px 0 rgba(191, 219, 254, 0.38),
-        inset 0 0 10px rgba(59, 130, 246, 0.12),
-        0 0 12px rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(96, 165, 250, 0.45);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 0 6px rgba(59, 130, 246, 0.16);
     }
+    #tabOverview #pendingBadge { display: none; }
     .nav-btn:focus-visible { outline: 2px solid rgba(96, 165, 250, 0.75); outline-offset: 2px; }
 
     .header-actions {
@@ -425,22 +423,109 @@ export function renderMobileRemoteHtml(params: {
     .harness-select:focus-visible { outline: 2px solid #0069fd; outline-offset: 2px; }
 
     .harness-summary {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 20px;
       width: 100%;
-      padding: 14px 16px;
-      border: 1px solid rgba(255, 255, 255, 0.11);
-      border-radius: 10px;
-      background: linear-gradient(180deg, #111216 0%, #0b0c0f 100%);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.35);
+      padding: 16px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, #111216 0%, #0c0d10 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
     }
-    .harness-summary-main { display: grid; gap: 5px; min-width: 0; }
-    .harness-summary-label { color: #60a5fa; font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
-    .harness-summary-name { color: #fff; font-size: 14px; font-weight: 650; }
-    .harness-summary-model { color: var(--text-secondary); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .harness-summary-model strong { color: #fff; font-weight: 600; }
+    .harness-summary::before {
+      display: none;
+      content: '';
+      position: absolute;
+      left: 0; top: 18px; bottom: 18px;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: linear-gradient(180deg, #93c5fd, #2f80ff);
+      box-shadow: 0 0 10px rgba(47, 128, 255, 0.6);
+    }
+    .harness-summary-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .harness-summary-icon {
+      display: grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .harness-summary-icon img { width: 26px; height: 26px; display: block; object-fit: contain; }
+    .harness-summary-main { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+    .harness-summary-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #60a5fa;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      line-height: 1;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .harness-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
+      animation: harnessPulse 2s ease-out infinite;
+    }
+    @keyframes harnessPulse {
+      0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); }
+      70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .harness-live-dot { animation: none; } }
+    .harness-summary-name { color: #fff; font-size: 17px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.15; }
+    .harness-summary-model {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+      max-width: 100%;
+      margin-top: 6px;
+      line-height: 1.3;
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .harness-summary-model strong { color: #d4d4d8; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+    .harness-chip-key {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .harness-summary-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+    .harness-budget {
+      --hb: #60a5fa;
+      display: grid;
+      gap: 5px;
+      min-width: 150px;
+      padding-right: 16px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .harness-budget[hidden] { display: none; }
+    .harness-budget[data-state="warn"] { --hb: #f59e0b; }
+    .harness-budget[data-state="over"] { --hb: #f43f5e; }
+    .harness-budget-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .harness-budget-key { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+    .harness-budget-amt { font-family: var(--font-mono); font-size: 15px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+    .harness-budget-track { height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+    .harness-budget-track span { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--hb); box-shadow: 0 0 8px var(--hb); transition: width 0.45s ease; }
+    .harness-budget-scope { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); }
     .panel-cell {
       background-image: linear-gradient(145deg, rgba(255, 255, 255, 0.025) 0%, rgba(0, 0, 0, 0.12) 100%);
     }
@@ -1109,67 +1194,185 @@ export function renderMobileRemoteHtml(params: {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0;
-      background: transparent;
-      border: none;
-      border-radius: 0;
       align-items: stretch;
       flex: 0 0 auto;
     }
 
     .gft-barcode-col {
+      --meter-a: #93c5fd;
+      --meter-b: #2f80ff;
+      --meter-glow: rgba(47, 128, 255, 0.45);
+      --meter-ink: #93c5fd;
+      position: relative;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      gap: 6px;
+      gap: 10px;
       min-width: 0;
-      background: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.02), transparent 60%);
-      border: none;
-      border-radius: 0;
-      padding: 14px 22px 18px;
-      transition: background 0.2s ease;
+      padding: 16px 22px 18px;
+      background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--meter-b) 7%, transparent), transparent 60%);
+      transition: background 0.3s ease;
     }
-
-    .gft-barcode-col:hover {
-      background: radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.04), transparent 65%);
-    }
-
-    .gft-barcode-col:first-child {
-      border-right: 1px solid var(--line-solid);
-    }
+    .gft-barcode-col[data-state="warn"] { --meter-a: #fde68a; --meter-b: #f59e0b; --meter-glow: rgba(245, 158, 11, 0.45); --meter-ink: #fcd34d; }
+    .gft-barcode-col[data-state="over"] { --meter-a: #fecdd3; --meter-b: #f43f5e; --meter-glow: rgba(244, 63, 94, 0.5); --meter-ink: #fda4af; }
+    .gft-barcode-col[data-state="cache"] { --meter-a: #ffffff; --meter-b: #7dd3fc; --meter-glow: rgba(125, 211, 252, 0.35); --meter-ink: #bae6fd; }
+    .gft-barcode-col:first-child { border-right: 1px solid var(--line-solid); }
 
     .gft-barcode-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 6px;
+      gap: 8px;
       white-space: nowrap;
     }
-
+    .gft-meter-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .gft-meter-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--meter-ink);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--meter-b) 35%, transparent);
+      background: color-mix(in srgb, var(--meter-b) 10%, transparent);
+    }
+    .gft-meter-state::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--meter-b);
+      box-shadow: 0 0 6px var(--meter-glow);
+    }
+    .gft-meter-value {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+    .gft-meter-value small {
+      font-size: 13px;
+      font-weight: 500;
+      margin-left: 2px;
+      color: var(--meter-ink);
+    }
+    .gft-meter-track { position: relative; padding: 4px 0; }
     .gft-barcode-bars {
       display: grid;
-      grid-template-columns: repeat(20, 1fr);
-      gap: 2px;
-      height: 34px;
-      align-items: end;
-      padding-top: 2px;
+      grid-template-columns: repeat(30, 1fr);
+      gap: 3px;
+      height: 22px;
     }
-
     .gft-tick {
-      width: 100%;
-      height: 100%;
-      border-radius: 1.5px;
-      background: rgba(255, 255, 255, 0.11);
-      transition: background 0.25s ease, height 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
     }
-
-    .gft-tick.lit-blue {
-      background: linear-gradient(180deg, #93c5fd 0%, #0069fd 100%);
-      box-shadow: 0 0 6px rgba(0, 105, 253, 0.35);
+    .gft-tick::after {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: calc(var(--fill, 0) * 100%);
+      background: linear-gradient(180deg, var(--meter-a) 0%, var(--meter-b) 100%);
+      opacity: var(--shade, 1);
+      transition: width 0.45s cubic-bezier(.2,.8,.2,1), opacity 0.3s ease;
     }
-
-    .gft-tick.lit-soft {
-      background: linear-gradient(180deg, #ffffff 0%, #60a5fa 100%);
+    .gft-tick.is-lead::after { box-shadow: 0 0 10px var(--meter-glow); }
+    .gft-meter-mark {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      margin-left: -1px;
+      border-radius: 1px;
+      background: rgba(255, 255, 255, 0.55);
+      box-shadow: 0 0 0 2px #0b0c0f;
+      pointer-events: none;
     }
+    .gft-meter-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .gft-meter-scale { color: var(--text-muted); }
+    .gft-meter-legacy { display: none !important; }
+    .gft-barcode-col[data-state="nocap"] { --meter-a: #e4e4e7; --meter-b: #a1a1aa; --meter-glow: rgba(161, 161, 170, 0.3); --meter-ink: #d4d4d8; background: none; }
+    .gft-barcode-col[data-state="nocap"] .gft-cap-only { display: none; }
+    .gft-barcode-col[data-state="nocap"] .gft-meter-state::before { box-shadow: none; }
+    .gft-cap-link {
+      flex-shrink: 0;
+      padding: 0;
+      border: none;
+      background: none;
+      font: 600 11px var(--font-sans);
+      color: #93c5fd;
+      cursor: pointer;
+    }
+    .gft-cap-link:hover { color: #bfdbfe; text-decoration: underline; text-underline-offset: 3px; }
+    .gft-cap-link:focus-visible, .gft-cap-btn:focus-visible { outline: 2px solid rgba(96, 165, 250, 0.75); outline-offset: 2px; border-radius: 4px; }
+    .gft-cap-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .gft-cap-editor[hidden] { display: none; }
+    .gft-cap-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--line-strong, rgba(255, 255, 255, 0.18));
+      border-radius: 7px;
+      background: #0c0d11;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .gft-cap-field:focus-within { border-color: rgba(96, 165, 250, 0.6); }
+    .gft-cap-field input {
+      width: 76px;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #fff;
+      font: 500 12.5px var(--font-mono);
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .gft-cap-field input::-webkit-outer-spin-button,
+    .gft-cap-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .gft-cap-btn {
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      font: 600 11.5px var(--font-sans);
+      cursor: pointer;
+    }
+    .gft-cap-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.24); }
+    .gft-cap-btn.is-primary { color: #fff; border-color: rgba(96, 165, 250, 0.5); background: rgba(59, 130, 246, 0.16); }
+    .gft-cap-btn.is-danger { color: #fda4af; border-color: rgba(244, 63, 94, 0.35); background: transparent; }
+    .gft-cap-btn[hidden] { display: none; }
+    .gft-cap-msg { flex-basis: 100%; font-size: 11px; color: #fda4af; }
+    .gft-cap-msg:empty { display: none; }
+    @media (prefers-reduced-motion: reduce) { .gft-tick::after { transition: none; } }
 
     .gft-pnl-right {
       display: grid;
@@ -1514,10 +1717,13 @@ export function renderMobileRemoteHtml(params: {
       }
       .gft-layer-mini-box { padding: 12px 14px; }
       .gft-barcode-pair { grid-template-columns: 1fr 1fr; gap: 0; }
-      .gft-barcode-col { padding: 10px 14px 14px; }
+      .gft-barcode-col { padding: 12px 14px 14px; gap: 8px; }
       .gft-barcode-col:first-child { border-right: 1px solid var(--line-solid); }
       .gft-barcode-head { flex-wrap: wrap; gap: 4px; }
-      .gft-barcode-bars { height: 26px; gap: 1.5px; }
+      .gft-meter-value { font-size: 21px; }
+      .gft-barcode-bars { grid-template-columns: repeat(20, 1fr); height: 18px; gap: 2px; }
+      .gft-meter-scale { display: none; }
+      .gft-meter-foot { white-space: normal; font-size: 10.5px; line-height: 1.4; }
       .gft-objectives-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
@@ -2221,9 +2427,12 @@ export function renderMobileRemoteHtml(params: {
         box-sizing: border-box;
         padding: 14px 16px;
       }
-      .harness-summary-name { font-size: 14px; }
-      .harness-summary-model { font-size: 11.5px; max-width: 100%; white-space: normal; line-height: 1.4; }
+      .harness-summary { flex-wrap: wrap; gap: 14px; }
+      .harness-summary-name { font-size: 15px; }
+      .harness-summary-model { font-size: 11.5px; white-space: normal; flex-wrap: wrap; line-height: 1.4; }
       .harness-summary .studio-tag { display: none; }
+      .harness-summary-right { width: 100%; }
+      .harness-budget { width: 100%; padding-right: 0; border-right: none; }
       .harness-switcher {
         width: 100%;
         box-sizing: border-box;
@@ -3114,15 +3323,25 @@ export function renderMobileRemoteHtml(params: {
   <div class="band" id="harnessBand">
     <div class="rail announce-rail">
       <div class="harness-summary">
-        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-          <img src="/brand/cairn-icon.jpg" alt="Cairn Mark" class="brand-asset-img" style="height: 30px; width: auto; flex-shrink: 0;" />
+        <div class="harness-summary-left">
+          <span class="harness-summary-icon"><img src="/brand/cairn-icon.png" alt="Cairn" width="26" height="26" /></span>
           <div class="harness-summary-main">
-            <span class="harness-summary-label">Currently using</span>
+            <span class="harness-summary-label">Currently using <span class="harness-live-dot" title="Live"></span></span>
             <span class="harness-summary-name" id="harnessSummaryName">Antigravity IDE</span>
-            <span class="harness-summary-model">Model · <strong id="bannerAgentName">Gemini 4 Argon · Medium (New)</strong></span>
+            <span class="harness-summary-model"><span class="harness-chip-key">Model</span><strong id="bannerAgentName">Gemini 4 Argon · Medium (New)</strong></span>
           </div>
         </div>
-        <span class="studio-tag" id="detectedHarnessBadge"><span class="studio-tag-dot"></span><span class="studio-tag-kicker">Active IDE</span><span style="color: rgba(255,255,255,0.28);">·</span><span>Antigravity IDE</span></span>
+        <div class="harness-summary-right">
+          <div class="harness-budget" id="cairnBudgetRemaining" hidden>
+            <div class="harness-budget-top">
+              <span class="harness-budget-key">Budget left</span>
+              <span class="harness-budget-amt" id="cairnBudgetRemainingAmt">$0.00</span>
+            </div>
+            <div class="harness-budget-track"><span id="cairnBudgetRemainingBar"></span></div>
+            <span class="harness-budget-scope" id="cairnBudgetRemainingScope">Task limit</span>
+          </div>
+          <span class="studio-tag" id="detectedHarnessBadge"><span class="studio-tag-dot"></span><span class="studio-tag-kicker">Active IDE</span><span style="color: rgba(255,255,255,0.28);">·</span><span>Antigravity IDE</span></span>
+        </div>
       </div>
 
       <div class="harness-switcher">
@@ -3239,24 +3458,47 @@ export function renderMobileRemoteHtml(params: {
                 </div>
               </div>
 
-              <!-- Compact Barcode Meters -->
+              <!-- Segmented Meters -->
               <div class="gft-barcode-pair">
-                <div class="gft-barcode-col">
+                <div class="gft-barcode-col" id="gftMeterBudget" data-state="nocap">
                   <div class="gft-barcode-head">
-                    <span style="font-size: 11px; color: var(--text-muted);">Budget Used</span>
-                    <span class="badge badge-green" id="burnPctBadge" style="font-size: 11.5px; padding: 2px 7px;">0% used</span>
+                    <span class="gft-meter-label" id="gftBudgetLabel">Session cost</span>
+                    <span class="gft-meter-state" id="gftBudgetState">No cap</span>
                   </div>
-                  <div class="gft-barcode-bars" id="gftBarcodeBudget"></div>
-                  <div class="segment-track" style="height: 3.5px; margin-top: 2px;"><div class="segment-fill" id="budgetBar"></div></div>
+                  <div class="gft-meter-value" id="gftBudgetValue">$0.00</div>
+                  <div class="gft-meter-track gft-cap-only">
+                    <div class="gft-barcode-bars" id="gftBarcodeBudget" role="meter" aria-label="Budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+                    <span class="gft-meter-mark" style="left: 80%;" title="80% budget alert"></span>
+                  </div>
+                  <div class="gft-meter-foot">
+                    <span id="gftBudgetFoot">Tracking spend only · no limit enforced</span>
+                    <button type="button" class="gft-cap-link" id="gftCapToggle" onclick="openCostCapEditor()">Set cost cap</button>
+                  </div>
+                  <form class="gft-cap-editor" id="gftCapEditor" hidden onsubmit="saveCostCap(event)">
+                    <label class="gft-cap-field" for="gftCapInput"><span>$</span><input id="gftCapInput" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="40.00" aria-label="Cost cap in US dollars" required /></label>
+                    <button type="submit" class="gft-cap-btn is-primary">Save</button>
+                    <button type="button" class="gft-cap-btn" onclick="closeCostCapEditor()">Cancel</button>
+                    <button type="button" class="gft-cap-btn is-danger" id="gftCapRemove" onclick="removeCostCap()" hidden>Remove cap</button>
+                    <span class="gft-cap-msg" id="gftCapMsg" role="status"></span>
+                  </form>
+                  <span class="badge badge-green gft-meter-legacy" id="burnPctBadge">0% used</span>
+                  <div class="gft-meter-legacy"><div id="budgetBar"></div></div>
                 </div>
 
-                <div class="gft-barcode-col">
+                <div class="gft-barcode-col" id="gftMeterCache" data-state="cache">
                   <div class="gft-barcode-head">
-                    <span style="font-size: 11px; color: var(--text-muted);">Prompt Cache</span>
-                    <span class="badge badge-green" id="agLiveCacheRateBadge" style="font-size: 11.5px; padding: 2px 7px;">0% cached</span>
+                    <span class="gft-meter-label">Prompt cache</span>
+                    <span class="gft-meter-state" id="gftCacheState">Warming up</span>
                   </div>
-                  <div class="gft-barcode-bars" id="gftBarcodeCache"></div>
-                  <div class="segment-track" style="height: 3.5px; margin-top: 2px;"><div class="segment-fill segment-fill-green" id="agLiveUsageBar"></div></div>
+                  <div class="gft-meter-value"><span id="gftCachePctNum">0.0</span><small>%</small></div>
+                  <div class="gft-meter-track">
+                    <div class="gft-barcode-bars" id="gftBarcodeCache" role="meter" aria-label="Prompt cache hit rate" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+                  </div>
+                  <div class="gft-meter-foot">
+                    <span>of input tokens served from cache</span>
+                  </div>
+                  <span class="badge badge-green gft-meter-legacy" id="agLiveCacheRateBadge">0% cached</span>
+                  <div class="gft-meter-legacy"><div id="agLiveUsageBar"></div></div>
                 </div>
               </div>
             </div>
@@ -4884,28 +5126,102 @@ export function renderMobileRemoteHtml(params: {
       }
     }
 
+    let gftBudgetMeta = { spent: 0, cap: 0 };
+    function paintGftMeter(el, pct) {
+      if (!el) return;
+      const total = window.matchMedia('(max-width: 640px)').matches ? 20 : 30;
+      const v = Math.max(0, Math.min(100, Number(pct) || 0));
+      const filled = (v / 100) * total;
+      const lead = Math.min(total - 1, Math.floor(Math.max(0, filled - 0.0001)));
+      let html = '';
+      for (let i = 0; i < total; i++) {
+        const fill = Math.max(0, Math.min(1, filled - i));
+        const shade = (0.55 + 0.45 * ((i + 1) / total)).toFixed(2);
+        html += '<span class="gft-tick' + (fill > 0 && i === lead ? ' is-lead' : '') + '" style="--fill:' + fill.toFixed(3) + ';--shade:' + shade + '"></span>';
+      }
+      el.innerHTML = html;
+      el.setAttribute('aria-valuenow', v.toFixed(1));
+    }
+
     function renderGftBarcodes(budgetPct, cachePct) {
-      const totalTicks = 20;
-      const bEl = document.getElementById('gftBarcodeBudget');
-      if (bEl) {
-        const litB = Math.max(1, Math.min(totalTicks, Math.round((Number(budgetPct || 0) / 100) * totalTicks)));
-        let htmlB = '';
-        for (let i = 0; i < totalTicks; i++) {
-          const heightPct = Math.round(38 + 62 * Math.sin(((i + 1) / totalTicks) * (Math.PI / 2)));
-          htmlB += '<span class="gft-tick ' + (i < litB ? 'lit-blue' : '') + '" style="height: ' + heightPct + '%;"></span>';
-        }
-        bEl.innerHTML = htmlB;
+      const b = Math.max(0, Number(budgetPct) || 0);
+      const c = Math.max(0, Number(cachePct) || 0);
+      paintGftMeter(document.getElementById('gftBarcodeBudget'), b);
+      paintGftMeter(document.getElementById('gftBarcodeCache'), c);
+
+      const hasCap = gftBudgetMeta.cap > 0;
+      const bCol = document.getElementById('gftMeterBudget');
+      const state = !hasCap ? 'nocap' : b >= 100 ? 'over' : b >= 80 ? 'warn' : 'ok';
+      if (bCol) bCol.dataset.state = state;
+      const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+      setText('gftBudgetLabel', hasCap ? 'Budget used' : 'Session cost');
+      setText('gftBudgetState', { nocap: 'No cap', over: 'Cap reached', warn: 'Near cap', ok: 'On track' }[state]);
+      setText('gftCapToggle', hasCap ? 'Edit cap' : 'Set cost cap');
+      const bVal = document.getElementById('gftBudgetValue');
+      if (bVal) {
+        bVal.innerHTML = hasCap
+          ? b.toFixed(1) + '<small>%</small>'
+          : '$' + gftBudgetMeta.spent.toFixed(2);
       }
-      const cEl = document.getElementById('gftBarcodeCache');
-      if (cEl) {
-        const litC = Math.max(1, Math.min(totalTicks, Math.round((Number(cachePct || 0) / 100) * totalTicks)));
-        let htmlC = '';
-        for (let i = 0; i < totalTicks; i++) {
-          const heightPct = Math.round(38 + 62 * Math.sin(((i + 1) / totalTicks) * (Math.PI / 2)));
-          htmlC += '<span class="gft-tick ' + (i < litC ? 'lit-soft' : '') + '" style="height: ' + heightPct + '%;"></span>';
-        }
-        cEl.innerHTML = htmlC;
+      setText('gftBudgetFoot', hasCap
+        ? '$' + gftBudgetMeta.spent.toFixed(2) + ' of $' + gftBudgetMeta.cap.toFixed(2) + ' · $' + Math.max(0, gftBudgetMeta.cap - gftBudgetMeta.spent).toFixed(2) + ' left'
+        : 'Tracking spend only · no limit enforced');
+
+      const cNum = document.getElementById('gftCachePctNum');
+      if (cNum) cNum.textContent = c.toFixed(1);
+      const cState = document.getElementById('gftCacheState');
+      if (cState) cState.textContent = c >= 70 ? 'Hot' : c >= 30 ? 'Warm' : c > 0 ? 'Cold' : 'Warming up';
+    }
+
+    // ---- Opt-in cost cap (project budget). No cap is set unless the user adds one. ----
+    function openCostCapEditor() {
+      const form = document.getElementById('gftCapEditor');
+      const input = document.getElementById('gftCapInput');
+      if (!form || !input) return;
+      form.hidden = false;
+      document.getElementById('gftCapToggle').hidden = true;
+      document.getElementById('gftCapRemove').hidden = !(gftBudgetMeta.cap > 0);
+      document.getElementById('gftCapMsg').textContent = '';
+      input.value = gftBudgetMeta.cap > 0 ? gftBudgetMeta.cap.toFixed(2) : '';
+      input.focus();
+    }
+    function closeCostCapEditor() {
+      const form = document.getElementById('gftCapEditor');
+      if (form) form.hidden = true;
+      const toggle = document.getElementById('gftCapToggle');
+      if (toggle) toggle.hidden = false;
+    }
+    async function putCostCap(projectBudget) {
+      const msg = document.getElementById('gftCapMsg');
+      try {
+        const res = await fetch('/api/policy', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Cairn-Token': TOKEN },
+          body: JSON.stringify({ budgets: { project: projectBudget } })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error((data.errors && data.errors[0]) || ('HTTP ' + res.status));
+        closeCostCapEditor();
+        await refreshStatus(false);
+        return true;
+      } catch (err) {
+        if (msg) msg.textContent = 'Could not save: ' + err.message;
+        return false;
       }
+    }
+    async function saveCostCap(event) {
+      event.preventDefault();
+      const usd = Number(document.getElementById('gftCapInput').value);
+      if (!(usd > 0)) {
+        document.getElementById('gftCapMsg').textContent = 'Enter an amount above $0.';
+        return;
+      }
+      if (await putCostCap({ usd: Math.round(usd * 100) / 100, exhaustion_mode: 'wind_down' })) {
+        showToast('Cost cap set to $' + usd.toFixed(2));
+      }
+    }
+    async function removeCostCap() {
+      if (await putCostCap(null)) showToast('Cost cap removed. Tracking session cost only.');
     }
 
     let gftChartSeriesPoints = [];
@@ -5973,36 +6289,39 @@ export function renderMobileRemoteHtml(params: {
           if (budget?.usd > 0) remaining.push({ scope, amount: Math.max(0, budget.usd - Number(data.spend?.[usedKey] || 0)) });
         }
         const budgetLeft = remaining.length ? Math.min(...remaining.map(x => x.amount)) : null;
-        const modelNode = document.querySelector('.harness-summary-model');
-        if (modelNode) {
-          const old = document.getElementById('cairnBudgetRemaining');
-          if (old) old.remove();
+        const budgetBox = document.getElementById('cairnBudgetRemaining');
+        if (budgetBox) {
+          budgetBox.hidden = budgetLeft === null;
           if (budgetLeft !== null) {
-            const tag = document.createElement('span');
-            tag.id = 'cairnBudgetRemaining';
-            tag.className = 'harness-summary-model';
-            tag.textContent = 'Cairn budget remaining · $' + budgetLeft.toFixed(2) + ' (' + remaining.find(x => x.amount === budgetLeft).scope + ' limit)';
-            modelNode.parentElement.appendChild(tag);
+            const tight = remaining.find(x => x.amount === budgetLeft);
+            const cap = Number(data.policy?.budgets?.[tight.scope.toLowerCase()]?.usd) || 0;
+            const leftPct = cap > 0 ? Math.max(0, Math.min(100, (budgetLeft / cap) * 100)) : 0;
+            budgetBox.dataset.state = leftPct <= 0 ? 'over' : leftPct <= 20 ? 'warn' : 'ok';
+            document.getElementById('cairnBudgetRemainingAmt').textContent = '$' + budgetLeft.toFixed(2);
+            document.getElementById('cairnBudgetRemainingScope').textContent = tight.scope + ' limit · of $' + cap.toFixed(2);
+            document.getElementById('cairnBudgetRemainingBar').style.width = leftPct.toFixed(1) + '%';
           }
         }
 
-        const projLimit = (data.policy.budgets.project && data.policy.budgets.project.usd) || 40;
+        const projLimit = Number(data.policy.budgets.project && data.policy.budgets.project.usd) || 0;
+        const hasCostCap = projLimit > 0;
         const spent = data.spend.projectUsd || 0;
-        const pct = Math.min(100, (spent / projLimit) * 100);
+        const pct = hasCostCap ? Math.min(100, (spent / projLimit) * 100) : 0;
 
-        document.getElementById('budgetCapBadge').textContent = '$' + projLimit.toFixed(2) + ' Limit';
+        document.getElementById('budgetCapBadge').textContent = hasCostCap ? '$' + projLimit.toFixed(2) + ' Limit' : 'Off';
         document.getElementById('statSpend').textContent = '$' + spent.toFixed(2);
         document.getElementById('statCalls').textContent = data.spend.totalCalls + ' requests tracked in session';
         document.getElementById('statTokens').textContent = formatCompactTokens(data.spend.totalTokens);
 
         document.getElementById('burnPctBadge').textContent = pct.toFixed(1) + '% used';
         document.getElementById('burnText').textContent = '$' + spent.toFixed(2) + ' spent';
-        document.getElementById('burnLimitText').textContent = '$' + projLimit.toFixed(2) + ' cap';
+        document.getElementById('burnLimitText').textContent = hasCostCap ? '$' + projLimit.toFixed(2) + ' cap' : 'No cap';
         document.getElementById('budgetBar').style.width = pct + '%';
 
         const objReqEl = document.getElementById('gftObjRequests');
         if (objReqEl) objReqEl.textContent = String(data.spend.totalCalls || 0);
-        renderGftBarcodes(pct, 0);
+        gftBudgetMeta = { spent: Number(spent) || 0, cap: Number(projLimit) || 0 };
+        renderGftBarcodes(pct, Number((document.getElementById("gftCachePctNum") || {}).textContent) || 0);
 
         // Queued steering instructions
         const steerQueue = data.steeringQueue || [];
@@ -6123,7 +6442,9 @@ export function renderMobileRemoteHtml(params: {
           if (autoRemainTextEl) autoRemainTextEl.textContent = formatCompactTokens(remainWindowTok) + ' ctx free';
           const autoRemainUsdEl = document.getElementById('autoDetectRemainUsd');
           if (autoRemainUsdEl) {
-            autoRemainUsdEl.textContent = remainBudgetUsd > 0
+            autoRemainUsdEl.textContent = !hasCostCap
+              ? ('· $' + spent.toFixed(2) + ' session cost')
+              : remainBudgetUsd > 0
               ? ('· $' + remainBudgetUsd.toFixed(2) + ' budget left')
               : ('· $' + spent.toFixed(2) + ' / $' + projLimit.toFixed(2) + ' cap');
           }

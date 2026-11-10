@@ -395,6 +395,7 @@ export class CairnDaemonServer {
         'cairn-icon.jpg': 'image/jpeg',
         'cairn-wordmark.jpg': 'image/jpeg',
         'cairn-combined.png': 'image/png',
+        'cairn-icon.png': 'image/png',
       };
       const mimeType = allowedBrandFiles[fileName];
       if (mimeType) {
@@ -662,6 +663,10 @@ export class CairnDaemonServer {
           ...((candidate.remote as Record<string, unknown>) ?? {}),
         },
       };
+      // A budget scope sent as null removes that cap (opt-out).
+      for (const [scope, value] of Object.entries(merged.budgets as Record<string, unknown>)) {
+        if (value === null) delete (merged.budgets as Record<string, unknown>)[scope];
+      }
       const validated = CairnPolicySchema.safeParse(merged);
       if (!validated.success) {
         this.sendJson(res, 400, {

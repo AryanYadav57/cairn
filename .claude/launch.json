@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cairn-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "main", "start"],
+      "port": 4100
+    }
+  ]
+}

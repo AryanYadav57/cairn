@@ -704,15 +704,15 @@ export class ProjectIntelService {
     const ledger = this.options.projectLedger?.getLedger();
 
     const actualProjectUsd = Math.max(spend.projectUsd, ledger?.totals.costUsd ?? 0);
-    const budgetCapUsd = policy.budgets.project?.usd ?? 40;
-    const dailyCapUsd = policy.budgets.daily?.usd ?? 10;
-    const taskCapUsd = policy.budgets.task?.usd ?? 3;
+    const budgetCapUsd = policy.budgets.project?.usd ?? null;
+    const dailyCapUsd = policy.budgets.daily?.usd ?? null;
+    const taskCapUsd = policy.budgets.task?.usd ?? null;
 
     const result = {
       budgets: {
         projectCapUsd: budgetCapUsd,
         projectUsedUsd: Number(spend.projectUsd.toFixed(4)),
-        projectUsedPct: budgetCapUsd > 0 ? Number(((spend.projectUsd / budgetCapUsd) * 100).toFixed(1)) : 0,
+        projectUsedPct: budgetCapUsd && budgetCapUsd > 0 ? Number(((spend.projectUsd / budgetCapUsd) * 100).toFixed(1)) : 0,
         combinedAllAgentsUsd: Number(actualProjectUsd.toFixed(4)),
         dailyCapUsd,
         dailyUsedUsd: Number(spend.dailyUsd.toFixed(4)),
@@ -750,7 +750,7 @@ export class ProjectIntelService {
 
     return {
       result,
-      summary: `Budget ${result.budgets.projectUsedPct}% used ($${spend.projectUsd.toFixed(2)} / $${budgetCapUsd.toFixed(2)} cap)${estimate ? ` vs PRD forecast $${estimate.totals.costUsd.expected.toFixed(2)}` : ''}`,
+      summary: `${budgetCapUsd ? `Budget ${result.budgets.projectUsedPct}% used ($${spend.projectUsd.toFixed(2)} / $${budgetCapUsd.toFixed(2)} cap)` : `Session cost $${spend.projectUsd.toFixed(2)} (no cost cap set)`}${estimate ? ` vs PRD forecast $${estimate.totals.costUsd.expected.toFixed(2)}` : ''}`,
     };
   }
 
@@ -944,8 +944,8 @@ export class ProjectIntelService {
       {
         label: 'Session Spend',
         value: `$${spend.projectUsd.toFixed(2)}`,
-        sub: `${spend.totalCalls} recorded calls · $${(policy.budgets.project?.usd ?? 40).toFixed(0)} cap`,
-        tone: spend.projectUsd > (policy.budgets.project?.usd ?? 40) * 0.8 ? 'red' : 'blue',
+        sub: `${spend.totalCalls} recorded calls · ${policy.budgets.project?.usd ? `$${policy.budgets.project.usd.toFixed(0)} cap` : 'no cap'}`,
+        tone: policy.budgets.project?.usd && spend.projectUsd > policy.budgets.project.usd * 0.8 ? 'red' : 'blue',
       },
       {
         label: 'Session Tokens',
@@ -1130,7 +1130,9 @@ export class ProjectIntelService {
         const est = r.prdEstimate as Record<string, unknown> | null;
         lines.push(`### Budget & PRD Forecast Comparison`);
         lines.push(
-          `- **Session Budget Used**: **$${Number(b.projectUsedUsd ?? 0).toFixed(2)}** of **$${Number(b.projectCapUsd ?? 40).toFixed(2)}** cap (**${b.projectUsedPct}%**)`
+          b.projectCapUsd
+            ? `- **Session Budget Used**: **$${Number(b.projectUsedUsd ?? 0).toFixed(2)}** of **$${Number(b.projectCapUsd).toFixed(2)}** cap (**${b.projectUsedPct}%**)`
+            : `- **Session Cost**: **$${Number(b.projectUsedUsd ?? 0).toFixed(2)}** (no cost cap set)`
         );
         if (est) {
           const estCost = (est.estimatedCostUsd as Record<string, number>) ?? {};
